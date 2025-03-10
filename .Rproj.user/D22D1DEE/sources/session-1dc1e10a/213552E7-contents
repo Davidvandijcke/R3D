@@ -1,0 +1,163 @@
+#' @title R3D: Regression Discontinuity with Distributional Outcomes
+#'
+#' @description
+#' Fits a local polynomial or local Fréchet (isotonic-projected) estimator
+#' of the average quantile function on each side of a cutoff, for an RDD with
+#' distributional outcomes. Also optionally handles fuzzy designs if \code{T} 
+#' (treatment) is provided.
+#'
+#' @param X Numeric vector of running variables (\eqn{n} units).
+#' @param Y_list A list of length \eqn{n}, where \code{Y_list[[i]]} is either 
+#'   a numeric vector of i.i.d. draws from the distribution of unit \eqn{i}.
+#' @param T (Optional) Numeric or logical vector of length \eqn{n}. If provided 
+#'   and \code{fuzzy=TRUE}, a fuzzy design is implemented.
+#' @param cutoff A numeric threshold for the RDD (default = 0).
+#' @param method Either \code{"simple"} (local polynomial on random quantiles) 
+#'   or \code{"frechet"} (local polynomial plus isotonic projection).
+#' @param q_grid Numeric vector of quantiles in (0,1).
+#' @param p Integer polynomial order for local regressions (default = 2).
+#' @param kernel A kernel function \eqn{K}, default is triangular.
+#' @param h Bandwidth (scalar). If \code{NULL}, you must implement or supply your own.
+#' @param fuzzy Logical. If \code{TRUE}, uses the fuzzy design formula. Then \code{T}
+#'   must be provided.
+#' @param ... Additional arguments (currently unused or for extension).
+#'
+#' @return A list with components:
+#' \item{tau}{ A numeric vector of length \code{length(q_grid)}: the 
+#'   estimated R3D treatment effect at each quantile.}
+#' \item{m_plus}{ The estimated average quantile function to the right of cutoff.}
+#' \item{m_minus}{ The estimated average quantile function to the left of cutoff.}
+#' \item{q_grid}{ The same grid of quantiles passed in.}
+#' \item{call}{ The matched call.}
+#'
+#' @details
+#' 1. We first compute empirical quantiles \eqn{\hat{Q}_{Y_i}(q)} for each unit 
+#'    \eqn{i} and each \eqn{q \in q\_grid}. 
+#' 2. We run local polynomial regressions to estimate 
+#'    \eqn{E[Q_{Y}(q) | X]}, separately for left and right of the cutoff, 
+#'    extracting the intercept at \eqn{X = \text{cutoff}}.
+#' 3. For \code{method="frechet"}, we project each side's estimated function onto 
+#'    the set of nondecreasing (valid quantile) curves, i.e. an isotonic regression 
+#'    w.r.t. \code{q_grid}.
+#' 4. If \code{fuzzy=TRUE}, we also do a local polynomial for \eqn{E[T|X]} and 
+#'    take the ratio. Otherwise, it's the sharp design difference.
+#'
+#' @export
+r3d <- function(X, 
+                Y_list,
+                T = NULL,
+                cutoff = 0,
+                method = c("simple", "frechet"),
+                q_grid = seq(0.05, 0.95, by = 0.05),
+                p = 2,
+                kernel = NULL,
+                h = NULL,
+                fuzzy = FALSE,
+                ...) 
+{
+  method <- match.arg(method)
+  if (is.null(kernel)) {
+    # Triangular kernel by default:
+    kernel <- function(u) pmax(0, 1 - abs(u))
+  }
+  n <- length(X)
+  if (length(Y_list) != n) {
+    stop("Lengths of X and Y_list must match.")
+  }
+  if (fuzzy && is.null(T)) {
+    stop("fuzzy=TRUE but T is NULL; must provide T-vector for fuzzy RDD.")
+  }
+  if (!fuzzy && !is.null(T)) {
+    message("Warning: T provided but fuzzy=FALSE; ignoring T.")
+  }
+  
+  # 1) Compute empirical quantiles for each i at each q in q_grid
+  Qmat_list <- .compute_empirical_qmat(Y_list, q_grid)
+  #  Qmat_list[[i]] is numeric(length(q_grid)) of Q_{Y_i}(q)
+  
+  # 2) Local polynomial weights for left and right side. 
+  #    *We compute them once and re-use across quantiles. 
+  if (is.null(h)) {
+    stop("Please provide a bandwidth 'h', or implement a bandwidth selector.")
+  }
+  
+  # For the 'mean function' of Q_{Y_i}(q)
+  w_minus <- .lp_boundary_weights(X, cutoff = cutoff, side = "left", 
+                                  p = p, kernel = kernel, h = h)
+  w_plus  <- .lp_boundary_weights(X, cutoff = cutoff, side = "right",
+                                  p = p, kernel = kernel, h = h)
+  
+  # Possibly also for T if fuzzy:
+  if (fuzzy) {
+    # local polynomial for E[T|X], same approach
+    w_minus_T <- w_minus  # (the same weights but for T) 
+    w_plus_T  <- w_plus
+    E_T_minus <- sum(w_minus_T * T)
+    E_T_plus  <- sum(w_plus_T  * T)
+    denom <- E_T_plus - E_T_minus
+    if (abs(denom) < 1e-12) {
+      stop("Fuzzy design: The difference E[T|X->0^+] - E[T|X->0^-] is near zero.")
+    }
+  }
+  
+  # 3) Evaluate local polynomial estimates for each quantile q:
+  m_minus_hat <- numeric(length(q_grid))
+  m_plus_hat  <- numeric(length(q_grid))
+  
+  for (j in seq_along(q_grid)) {
+    # Q_{Y_i}(q_grid[j]) across i
+    qvals <- sapply(Qmat_list, "[", j)
+    m_minus_hat[j] <- sum(w_minus * qvals)
+    m_plus_hat[j]  <- sum(w_plus  * qvals)
+  }
+  
+  # 4) If method="frechet", do an isotonic projection (monotone rearrangement)
+  if (method == "frechet") {
+    m_minus_hat <- .monotone_projection(m_minus_hat, q_grid)
+    m_plus_hat  <- .monotone_projection(m_plus_hat,  q_grid)
+  }
+  
+  # 5) Combine into the treatment effect
+  if (fuzzy) {
+    # ratio
+    tau_hat <- (m_plus_hat - m_minus_hat) / denom
+  } else {
+    # sharp
+    tau_hat <- m_plus_hat - m_minus_hat
+  }
+  
+  out <- list(
+    tau     = tau_hat,
+    m_plus  = m_plus_hat,
+    m_minus = m_minus_hat,
+    q_grid  = q_grid,
+    call    = match.call()
+  )
+  class(out) <- "r3d"
+  return(out)
+}
+
+
+#' @title Convenience Wrapper for Fuzzy R3D
+#'
+#' @description
+#' Just calls \code{\link{r3d}} with \code{fuzzy=TRUE}, for convenience.
+#'
+#' @inheritParams r3d
+#' @export
+r3d_fuzzy <- function(X, Y_list, T,
+                      cutoff = 0,
+                      method = c("simple","frechet"),
+                      q_grid = seq(0.05, 0.95, 0.05),
+                      p = 2,
+                      kernel = NULL,
+                      h = NULL,
+                      ...)
+{
+  method <- match.arg(method)
+  if (is.null(T)) stop("Must provide T for fuzzy design.")
+  out <- r3d(X = X, Y_list = Y_list, T = T,
+             cutoff = cutoff, method = method, q_grid = q_grid,
+             p = p, kernel = kernel, h = h, fuzzy = TRUE, ...)
+  return(out)
+}

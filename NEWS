@@ -1,0 +1,30 @@
+frechet v0.3.0 (Release date: 07-Dec-2023)
+=============
+Changes:
+* Included implementations for Fréchet variance and Fréchet ANOVA <DOI:10.1093/biomet/asz052>.
+* Included implementations for Fréchet change-point detection <DOI:10.1214/19-AOS1930>.
+* Included methods for functional object data proposed in <DOI:10.1080/01621459.2021.1917416> and <DOI:10.1111/rssb.12337>.
+* Included implementations for Fréchet regression for spherical responses and correlations <DOI:10.1214/17-AOS1624>.
+* Included implementations for point process Fréchet regression <DOI:10.1109/TIT.2021.3126466>.
+* Included computation for Fréchet means with potentially unequal weights.
+
+Minors:
+* Fixed bugs in Fréchet regression for distributions and covariances.
+
+
+frechet v0.2.0 (Release date: 15-Dec-2020)
+=============
+Changes:
+* Allowed multivariate predictors for local Fréchet regression with distribution-valued responses in LocDenReg.R
+* Added functions to compute distances between distributions and covariance matrices in dist4den.R and dist4cov.R, respectively
+* Eliminated GCV selection of bandwidths in LocDenReg.R
+* Allowed alpha to be any non-negative numbers in GloCovReg.R and LocCovReg.R
+
+Minors:
+* Fixed a bug in DenFMean.R
+* Added warnings when redundant input is given in GloDenReg.R and LocDenReg.R
+
+
+frechet v0.1.0 (Release date: 19-June-2020)
+============
+* Initial release

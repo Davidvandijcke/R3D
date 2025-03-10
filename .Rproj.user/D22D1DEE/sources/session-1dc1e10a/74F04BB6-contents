@@ -1,0 +1,728 @@
+# Load necessary packages
+library(frechet)        # For frechet::LocDenReg function
+library(locfit)         # For local linear regression in the simple estimator
+library(ggplot2)        # For plotting
+library(dplyr)          # For data manipulation
+library(doParallel)     # For parallel processing
+library(foreach)        # For parallel loops
+library(Rearrangement)  # For monotone rearrangement
+library(QTE.RD)         # For classical Quantile RDD estimator
+library(tidyr)          # For data reshaping
+
+# Ensure that the QTE.RD package is installed. If not, install it using:
+# install.packages("QTE.RD")
+
+###########################
+# Define Simulation Parameters
+###########################
+
+# Define shifts at the cutoff
+delta_mu <- 2          # Constant shift in mu at x = c
+delta_sigma <- 0.5     # Constant shift in sigma at x = c
+
+# Define parameters for mu and sigma below and above the cutoff for normal distributions
+base_mu_below <- 5       # Base mu for y below cutoff
+slope_mu_below <- 0.5    # Slope for mu with respect to x below cutoff
+base_sigma_below <- 1    # Base sigma for y below cutoff
+slope_sigma_below <- 0.2 # Slope for sigma with respect to x below cutoff
+
+base_mu_above <- 0       # Base mu above cutoff (set to 0 since shift is applied)
+slope_mu_above <- 0.0    # Slope for mu with respect to x above cutoff (set to 0 for constant shift)
+base_sigma_above <- 0    # Base sigma above cutoff (set to 0 since shift is applied)
+slope_sigma_above <- 0.0 # Slope for sigma with respect to x above cutoff (set to 0 for constant shift)
+
+# Define parameters for exponential distributions
+min_mu <- 0.1
+min_sigma <- 0.1
+min_lambda <- 0.1 # Minimum lambda for exponential distributions
+
+# Define the cutoff
+c_cutoff <- 0
+
+base_bw <- 0.1
+
+
+###########################
+# Scenario Definitions
+###########################
+scenario_names <- c(
+  "Normal Means and Variances with Jumps",
+  "Normal Means Shifting from Normal to Exponential",
+  "Shifting from Normal to Exponential Distributions with Exponential Means"
+)
+
+
+# Set the selected scenario here (1 to 3)
+selected_scenario <- 2  # Change this value to 1, 2, or 3 to select the scenario
+
+for (selected_scenario in 1:3) { 
+# Validate the selected scenario
+if (!(selected_scenario %in% 1:3)) {
+  stop("selected_scenario must be an integer between 1 and 3.")
+}
+
+##############################
+# Data Generation Functions
+##############################
+
+# Scenario 1: Normal distributions with shifts in mean and variance, with jumps at the cutoff
+simulate_data_scenario1 <- function(N, n_obs, c = c_cutoff) {
+  x <- runif(N, min = -1, max = 1)
+  y <- vector("list", N)
+  
+  # Precompute mu and sigma at the cutoff for consistency
+  mu_at_c <- base_mu_below + slope_mu_below * c
+  sigma_at_c <- base_sigma_below + slope_sigma_below * c
+  
+  for (i in 1:N) {
+    if (x[i] < c) {
+      # Below the cutoff
+      mu <- rnorm(1, mean = base_mu_below + slope_mu_below * x[i], sd = 1)
+      sigma <- abs(rnorm(1, mean = base_sigma_below + slope_sigma_below * x[i], sd = 0.5))
+    } else {
+      # Above the cutoff, introduce positive shifts based on mu and sigma at x = c
+      mu <- rnorm(1, mean = mu_at_c + delta_mu, sd = 1)       # Shifted mean
+      sigma <- abs(rnorm(1, mean = sigma_at_c + delta_sigma + slope_sigma_below * x[i], sd = 0.5)) # Shifted sigma
+    }
+    
+    y[[i]] <- rnorm(n_obs, mean = mu, sd = sigma)
+  }
+  
+  return(list(x = x, y = y))
+}
+
+# Scenario 2: Normal Outcome Distributions with Means Shifting from Normal to Exponential Across the Cutoff
+simulate_data_scenario2 <- function(N, n_obs, c = c_cutoff) {
+  x <- runif(N, min = -1, max = 1)
+  y <- vector("list", N)
+  
+  # Precompute mu and sigma at the cutoff for consistency
+  mu_at_c <- base_mu_below + slope_mu_below * c
+  sigma_at_c <- base_sigma_below + slope_sigma_below * c
+  
+  for (i in 1:N) {
+    if (x[i] < c) {
+      # Below the cutoff: Normal outcomes with normally distributed means
+      mu_below <- rnorm(1, mean = base_mu_below + slope_mu_below * x[i], sd = 1)
+      sigma_below <- abs(rnorm(1, mean = base_sigma_below + slope_sigma_below * x[i], sd = 0.5))
+      
+      y[[i]] <- rnorm(n_obs, mean = mu_below, sd = sigma_below)
+    } else {
+      # Above the cutoff: Normal outcomes with exponentially distributed means
+      # Ensure that the exponential means are greater than or equal to mu_at_c + delta_mu
+      exp_shift <- sads::rpareto(n=1, scale = delta_mu, shape=3)  # Positive shift
+      mu_below <- rnorm(1, mean = base_mu_below + slope_mu_below * x[i], sd = 1)
+      
+      mu_above <- mu_below + exp_shift  # Ensures mu_above > mu_at_c + delta_mu
+      
+      sigma_above <- abs(rnorm(1, mean = base_sigma_below + delta_sigma + slope_sigma_below * x[i], sd = 0.5)) # Shifted sigma
+      
+      y[[i]] <- rnorm(n_obs, mean = mu_above, sd = sigma_above)
+    }
+  }
+  
+  return(list(x = x, y = y))
+}
+
+# Scenario 3: Shifting from Normal to Exponential Outcome Distributions with Exponentially Distributed Means
+simulate_data_scenario3 <- function(N, n_obs, c = c_cutoff) {
+  x <- runif(N, min = -1, max = 1)
+  y <- vector("list", N)
+  
+  # Precompute mu and sigma at the cutoff for consistency
+  mu_at_c <- base_mu_below + slope_mu_below * c
+  sigma_at_c <- base_sigma_below + slope_sigma_below * c
+  
+  for (i in 1:N) {
+    if (x[i] < c) {
+      # Below the cutoff: Normal outcomes with normally distributed means
+      mu_below <- rnorm(1, mean = base_mu_below + slope_mu_below * x[i], sd = 1)
+      sigma_below <- abs(rnorm(1, mean = base_sigma_below + slope_sigma_below * x[i], sd = 0.5))
+      
+      y[[i]] <- rnorm(n_obs, mean = mu_below, sd = sigma_below)
+    } else {
+      # Above the cutoff: Exponential outcomes with exponentially distributed means
+      # Ensure that the exponential means are greater than or equal to mu_at_c + delta_mu + 1
+      exp_shift <- sads::rpareto(1, scale = delta_mu, shape = 3)
+      mu_below <- rnorm(1, mean = base_mu_below + slope_mu_below * x[i], sd = 1)
+      final_mean <- mu_below  + exp_shift   # Ensures final_mean > mu_at_c + delta_mu
+      y[[i]] <- sads::rpareto(n_obs, scale = final_mean, shape = 3)
+    }
+  }
+  
+  return(list(x = x, y = y))
+}
+
+# Dispatcher function to generate data based on selected scenario
+generate_data <- function(scenario, N, n_obs, c = c_cutoff) {
+  if (scenario == 1) {
+    return(simulate_data_scenario1(N, n_obs, c))
+  } else if (scenario == 2) {
+    return(simulate_data_scenario2(N, n_obs, c))
+  } else if (scenario == 3) {
+    return(simulate_data_scenario3(N, n_obs, c))
+  } else {
+    stop("Invalid scenario number.")
+  }
+}
+
+##############################
+# True Treatment Effect Functions
+##############################
+
+# Scenario 1: True treatment effect for normal distributions with jumps
+true_treatment_effect_scenario1 <- function(q_levels, c = c_cutoff) {
+  # Below cutoff
+  mu_at_c <- base_mu_below + slope_mu_below * c
+  sigma_at_c <- base_sigma_below + slope_sigma_below * c
+  
+  mu_below <- mu_at_c  # At x = c
+  sigma_below <- sigma_at_c
+  
+  # Above cutoff with positive shift
+  mu_above <- mu_below + delta_mu
+  sigma_above <- sigma_below + delta_sigma
+  
+  # Compute the theoretical quantiles for the normal distributions
+  q_below <- qnorm(q_levels, mean = mu_below, sd = sigma_below)
+  q_above <- qnorm(q_levels, mean = mu_above, sd = sigma_above)
+  
+  # Compute the true treatment effect
+  treatment_effect <- q_above - q_below
+  
+  return(treatment_effect)
+}
+
+# Scenario 2: True treatment effect for normal outcomes with means shifting from normal to exponential
+true_treatment_effect_scenario2 <- function(q_levels, c = c_cutoff, num_sim = 100000) {
+  # Below cutoff: Normal outcomes with normally distributed means
+  # To introduce randomness, simulate mu_below for each simulation
+  mu_at_c <- base_mu_below + slope_mu_below * c
+  sigma_at_c <- base_sigma_below + slope_sigma_below * c
+  
+  # Simulate mu_below from the same distribution as in data generation
+  mu_below_samples <- rnorm(num_sim, mean = mu_at_c, sd = 1)
+  sigma_below_samples <- abs(rnorm(num_sim, mean = sigma_at_c, sd = 0.5))
+  
+  # Above cutoff: Normal outcomes with exponentially distributed means
+  # Simulate a large number of exponentially distributed mu_above
+  exp_shifts <- sads::rpareto(num_sim, scale = delta_mu, shape=3) # Positive shifts
+  mu_above_samples <- mu_below_samples + exp_shifts  # Ensures mu_above > mu_below + delta_mu
+  sigma_above_samples <- abs(rnorm(num_sim, mean = sigma_at_c + delta_sigma, sd = 0.5))
+  
+  
+  # Compute quantiles for each simulation
+  q_below <- matrix(NA, nrow = length(q_levels), ncol = num_sim)
+  q_above <- matrix(NA, nrow = length(q_levels), ncol = num_sim)
+  
+  for (j in 1:num_sim) {
+    q_below[, j] <- qnorm(q_levels, mean = mu_below_samples[j], sd = sigma_below_samples[j])
+    q_above[, j] <- qnorm(q_levels, mean = mu_above_samples[j], sd = sigma_above_samples[j])
+  }
+  
+  # Compute treatment effect for each simulation
+  treatment_effect <- rowMeans(q_above, na.rm=TRUE) - rowMeans(q_below, na.rm=TRUE)
+  
+  return(treatment_effect)
+}
+
+# Scenario 3: True treatment effect for shifting from normal to exponential distributions with exponential means
+true_treatment_effect_scenario3 <- function(q_levels, c = c_cutoff, num_sim = 100000) {
+  # Below cutoff: Normal outcomes with normally distributed means
+  # Simulate mu_below for each simulation
+  mu_at_c <- base_mu_below + slope_mu_below * c
+  sigma_at_c <- base_sigma_below + slope_sigma_below * c
+  
+  mu_below_samples <- rnorm(num_sim, mean = mu_at_c, sd = 1)
+  sigma_below_samples <- abs(rnorm(num_sim, mean = sigma_at_c, sd = 0.5))
+  
+  # Above cutoff: Exponential outcomes with exponentially distributed means
+  # Simulate final_mean ensuring E[y_above] > mu_below + delta_mu
+  exp_shifts <- sads::rpareto(num_sim, scale = delta_mu, shape=3)
+  final_means <- mu_below_samples +  exp_shifts  # Ensures final_mean > mu_at_c + delta_mu
+  
+  # Compute quantiles for exponential distributions
+  q_above <- matrix(NA, nrow = length(q_levels), ncol = num_sim)
+  for (j in 1:num_sim) {
+    q_above[, j] <- qpareto(q_levels, scale = final_means[j], shape=3)
+  }
+  
+  # Compute quantiles for normal distributions
+  q_below <- matrix(NA, nrow = length(q_levels), ncol = num_sim)
+  for (j in 1:num_sim) {
+    q_below[, j] <- qnorm(q_levels, mean = mu_below_samples[j], sd = sigma_below_samples[j])
+  }
+  
+  # Compute treatment effect for each simulation
+  treatment_effect <- rowMeans(q_above, na.rm=TRUE) - rowMeans(q_below, na.rm=TRUE)
+  
+  # # Ensure treatment effects are positive
+  # te_sim <- pmax(te_sim, 0)
+  
+  return(treatment_effect)
+}
+
+# Dispatcher function to compute true treatment effects based on selected scenario
+compute_true_treatment_effect <- function(scenario, q_levels, c = c_cutoff) {
+  if (scenario == 1) {
+    return(true_treatment_effect_scenario1(q_levels, c))
+  } else if (scenario == 2) {
+    return(true_treatment_effect_scenario2(q_levels, c))
+  } else if (scenario == 3) {
+    return(true_treatment_effect_scenario3(q_levels, c))
+  } else {
+    stop("Invalid scenario number.")
+  }
+}
+
+##############################
+# Estimation Functions
+##############################
+
+# Function to estimate treatment effect using local Fréchet regression
+estimate_frechet_treatment_effect <- function(x, y, c = c_cutoff, bw = 0.2, 
+                                              quantile_levels = seq(0.1, 0.9, by = 0.1)) {
+  # Load the frechet package (necessary when running in parallel)
+  library(frechet)
+  
+  # Split data into below and above cutoff
+  x_below <- x[x < c]
+  y_below <- y[x < c]
+  
+  x_above <- x[x >= c]
+  y_above <- y[x >= c]
+  
+  # Check for sufficient data
+  if (length(x_below) < 5 || length(x_above) < 5) {
+    return(rep(NA, length(quantile_levels)))
+  }
+  
+  # Run local Fréchet regression on below and above data separately, predicting at x = c
+  res_below <- frechet::LocDenReg(xin = x_below, yin = y_below, xout = c, 
+                                  optns = list("bwReg" = as.vector(bw), 
+                                               "kernelReg" = "gauss", 
+                                               "infSupport" = TRUE))
+  res_above <- frechet::LocDenReg(xin = x_above, yin = y_above, xout = c, 
+                                  optns = list("bwReg" = as.vector(bw), 
+                                               "kernelReg" = "gauss", 
+                                               "infSupport" = TRUE))
+  
+  # Extract the estimated quantile functions at x = c
+  qout_below <- res_below$qout
+  qout_above <- res_above$qout
+  
+  # res_below$qSup gives the quantile levels used in estimation
+  qSup <- res_below$qSup
+  
+  # Compute the treatment effect as the difference in quantiles
+  treatment_effect <- qout_above - qout_below
+  
+  # Interpolate the treatment effect at the specified quantile levels
+  treatment_effect_interp <- approx(qSup, treatment_effect, xout = quantile_levels)$y
+  
+  # # Ensure positive treatment effects
+  # treatment_effect_interp <- pmax(treatment_effect_interp, 0)
+  
+  return(treatment_effect_interp)
+}
+
+# Function to estimate treatment effect using the simple estimator with monotone rearrangement
+estimate_simple_treatment_effect <- function(x, y, c = c_cutoff, bw = 0.2, 
+                                             quantile_levels = seq(0.1, 0.9, by = 0.1)) {
+  # Load necessary packages (when running in parallel)
+  library(locfit)
+  library(Rearrangement)
+  
+  # For each unit, compute the quantiles at the specified levels
+  quantiles <- sapply(y, function(y_i) {
+    quantile(y_i, probs = quantile_levels, na.rm = TRUE)
+  })
+  # quantiles is a matrix with rows corresponding to quantile levels, columns to units
+  
+  # Initialize vectors to store estimated quantiles at x = c for each side
+  q_hat_below_all <- numeric(length(quantile_levels))
+  q_hat_above_all <- numeric(length(quantile_levels))
+  
+  # For each quantile level, fit local linear regression and predict at x = c
+  for (j in 1:length(quantile_levels)) {
+    q_values <- quantiles[j, ]  # Quantile values at level q for each unit
+    
+    # Create a data frame
+    data <- data.frame(x = x, q = q_values)
+    
+    # Fit local linear regression on data below the cutoff
+    data_below <- data[data$x < c, ]
+    if (nrow(data_below) < 5) {
+      q_hat_below_all[j] <- NA
+    } else {
+      fit_below <- locfit::locfit(q ~ x, data = data_below, deg = 1, kern = "rect", alpha = bw)
+      q_hat_below_all[j] <- predict(fit_below, newdata = data.frame(x = c))
+    }
+    
+    # Fit local linear regression on data above the cutoff
+    data_above <- data[data$x >= c, ]
+    if (nrow(data_above) < 5) {
+      q_hat_above_all[j] <- NA
+    } else {
+      fit_above <- locfit::locfit(q ~ x, data = data_above, deg = 1, kern = "rect", alpha = bw)
+      q_hat_above_all[j] <- predict(fit_above, newdata = data.frame(x = c))
+    }
+  }
+  
+  # Apply monotone rearrangement using the Rearrangement package
+  # Rearrange below quantiles
+  if (any(is.na(q_hat_below_all))) {
+    rearranged_below <- rep(NA, length(q_hat_below_all))
+  } else {
+    # Prepare inputs as single-element lists
+    rearranged_below <- Rearrangement::rearrangement(
+      x = list(quantile_levels), 
+      y = q_hat_below_all
+    )
+  }
+  
+  # Rearrange above quantiles
+  if (any(is.na(q_hat_above_all))) {
+    rearranged_above <- rep(NA, length(q_hat_above_all))
+  } else {
+    # Prepare inputs as single-element lists
+    rearranged_above <- Rearrangement::rearrangement(
+      x = list(quantile_levels), 
+      y = q_hat_above_all
+    )
+  }
+  
+  # Compute the treatment effect as the difference between rearranged quantiles
+  treatment_effect <- rearranged_above - rearranged_below
+  
+  # # Ensure that treatment effects are positive
+  # treatment_effect <- pmax(treatment_effect, 0)
+  
+  return(treatment_effect)
+}
+
+# Function to estimate treatment effect using the classical Quantile RDD estimator from QTE.RD package
+estimate_classical_quantile_rdd <- function(x, y, c = c_cutoff, bw = 0.1, 
+                                            quantile_levels = seq(0.1, 0.9, by = 0.1)) {
+  # Load necessary packages (when running in parallel)
+  library(QTE.RD)
+  
+  # Combine x and y into a data frame
+  y_unlisted <- unlist(y)
+  x_repeated <- rep(x, times = sapply(y, length))
+  d <- as.numeric(x_repeated >= c)
+  
+  data_qte <- data.frame(y = y_unlisted, x = x_repeated, d = d)
+  
+  # Perform Quantile RDD estimation using QTE.RD package
+  # Replace 'rd.qte' with the actual function name from QTE.RD package
+  # Here, we'll assume the function 'rd.qte' exists and works appropriately
+  tryCatch({
+    qte_results <- QTE.RD::rd.qte(y = data_qte$y, x = data_qte$x, d = data_qte$d, 
+                                  x0 = c, bdw = bw, tau = quantile_levels, bias = 1, cov = 0)
+    
+    # Assuming rd.qte returns a list with 'tau' and 'qte' elements
+    treatment_effect <- qte_results$qte  # Adjust based on actual output
+    
+    # # Ensure treatment effects are positive
+    # treatment_effect <- pmax(treatment_effect, 0)
+    
+    return(treatment_effect)
+  }, error = function(e) {
+    # In case of error (e.g., estimation failure), return NA
+    return(rep(NA, length(quantile_levels)))
+  })
+}
+
+##############################
+# Simulation Setup
+##############################
+
+# Set up sample sizes for the simulation
+sample_sizes <- data.frame(N = c(100, 200, 500), n_obs = c(100, 200, 500))
+
+# Define scenarios (1 to 3)
+scenarios <- 1:3
+
+# Initialize lists to store the results
+results_list <- list()
+time_results <- data.frame()
+
+# Inform the user about the selected scenario
+cat("Running Scenario:", selected_scenario, "-", scenario_names[selected_scenario], "\n")
+
+
+# Loop over sample sizes
+for (s in 1:nrow(sample_sizes)) {
+  N <- sample_sizes$N[s]
+  n_obs <- sample_sizes$n_obs[s]
+  
+  # Set simulation parameters
+  set.seed(123)
+  M <- 1000            # Number of Monte Carlo replications
+  c <- c_cutoff       # Cutoff
+  step <- 0.01
+  quantile_levels <- seq(step, 1 - step, by = step)  # Quantile levels (avoiding 0 and 1)
+  
+  # Compute the true treatment effect based on the selected scenario
+  true_te <- compute_true_treatment_effect(selected_scenario, quantile_levels, c = c)
+  
+  # Calculate dynamic bandwidth: bw = 0.1 * N^{-1/5}
+  bw <- base_bw * (N / 100)^(-1/5)
+  
+  # Set up parallel backend
+  numCores <- parallel::detectCores() - 1  # Use one less than the total number of cores
+  cl <- makeCluster(numCores)
+  registerDoParallel(cl)
+  
+  # Load necessary packages on each worker
+  clusterCall(cl, function() {
+    library(frechet)
+    library(locfit)
+    library(Rearrangement)
+    library(QTE.RD)
+    library(dplyr)
+  })
+  
+  # Export necessary functions and data to the cluster
+  clusterExport(cl, c(
+    "simulate_data_scenario1", "simulate_data_scenario2",
+    "simulate_data_scenario3",
+    "estimate_frechet_treatment_effect", 
+    "estimate_simple_treatment_effect", 
+    "estimate_classical_quantile_rdd", 
+    "true_treatment_effect_scenario1",
+    "true_treatment_effect_scenario2",
+    "true_treatment_effect_scenario3",
+    "compute_true_treatment_effect",
+    "generate_data",
+    "N", "n_obs", "c", "bw", "quantile_levels", 
+    "delta_mu", "delta_sigma",
+    "base_mu_below", "slope_mu_below",
+    "base_sigma_below", "slope_sigma_below",
+    "base_mu_above", "slope_mu_above",
+    "base_sigma_above", "slope_sigma_above",
+    "min_mu", "min_sigma",
+    "selected_scenario",
+    "scenario_names", 
+    "rpareto", "qpareto"
+  ))
+  
+  # Parallel Monte Carlo simulation loop
+  sim_results <- foreach(m = 1:M, 
+                         .packages = c("frechet", "locfit", "Rearrangement", "QTE.RD", "dplyr"), 
+                         .combine = rbind) %dopar% {
+                           # Set seed for reproducibility in each worker
+                           set.seed(123 + m)
+                           
+                           # Simulate data
+                           data_sim <- generate_data(selected_scenario, N, n_obs, c = c)
+                           x_sim <- data_sim$x
+                           y_sim <- data_sim$y
+                           
+                           # Estimate treatment effect using Fréchet regression
+                           start_time_frechet <- Sys.time()
+                           te_frechet <- estimate_frechet_treatment_effect(x = x_sim, y = y_sim, c = c, 
+                                                                           bw = bw, quantile_levels = quantile_levels)
+                           end_time_frechet <- Sys.time()
+                           time_frechet <- as.numeric(difftime(end_time_frechet, start_time_frechet, units = "secs"))
+                           
+                           # Estimate treatment effect using the simple estimator with monotone rearrangement
+                           start_time_simple <- Sys.time()
+                           te_simple <- estimate_simple_treatment_effect(x = x_sim, y = y_sim, c = c, 
+                                                                         bw = bw, quantile_levels = quantile_levels)
+                           end_time_simple <- Sys.time()
+                           time_simple <- as.numeric(difftime(end_time_simple, start_time_simple, units = "secs"))
+                           
+                           # Estimate treatment effect using the classical Quantile RDD estimator
+                           start_time_classical <- Sys.time()
+                           te_classical <- estimate_classical_quantile_rdd(x = x_sim, y = y_sim, c = c, 
+                                                                           bw = bw, quantile_levels = quantile_levels)
+                           end_time_classical <- Sys.time()
+                           time_classical <- as.numeric(difftime(end_time_classical, start_time_classical, units = "secs"))
+                           
+                           # Combine results into a data frame
+                           result <- data.frame(
+                             Scenario = selected_scenario,
+                             Scenario_Name = scenario_names[selected_scenario],
+                             Method = rep(c("Fréchet Regression", "Simple Estimator", "Classical Quantile RDD"), 
+                                          each = length(quantile_levels)),
+                             Quantile = rep(quantile_levels, times = 3),
+                             Estimate = c(te_frechet, te_simple, te_classical),
+                             Replication = m,
+                             Time_Taken = c(rep(time_frechet, length(quantile_levels)), 
+                                            rep(time_simple, length(quantile_levels)),
+                                            rep(time_classical, length(quantile_levels)))
+                           )
+                           
+                           return(result)
+                         }
+  
+  # Stop the cluster
+  stopCluster(cl)
+  
+  # Compute performance metrics
+  sim_results$True_TE <- rep(true_te, times = 3 * M)
+  sim_results$Error <- sim_results$Estimate - sim_results$True_TE
+  sim_results$N <- N
+  sim_results$n_obs <- n_obs
+  
+  # Aggregate results
+  agg_results <- sim_results %>%
+    group_by(Scenario, Scenario_Name, Method, Quantile, N, n_obs) %>%
+    summarise(
+      Bias = mean(Error, na.rm = TRUE),
+      SE = sd(Estimate, na.rm = TRUE),
+      MSE = mean(Error^2, na.rm = TRUE),
+      True_TE = mean(True_TE, na.rm = TRUE),
+      Time_Taken = mean(Time_Taken, na.rm = TRUE),
+      .groups = 'drop'
+    )
+  
+  # Calculate Relative Bias
+  agg_results <- agg_results %>%
+    mutate(
+      Relative_Bias = ifelse(True_TE != 0, (Bias / True_TE) * 100, NA)
+    )
+  
+  # Compute Average Performance Across Quantiles
+  avg_results <- agg_results %>%
+    group_by(Scenario, Scenario_Name, Method, N, n_obs) %>%
+    summarise(
+      Bias = mean(Bias, na.rm = TRUE),
+      SE = mean(SE, na.rm = TRUE),
+      MSE = mean(MSE, na.rm = TRUE),
+      Relative_Bias = mean(Relative_Bias, na.rm = TRUE),
+      Time_Taken = mean(Time_Taken, na.rm = TRUE),
+      Quantile = 999,  # Indicator for average across quantiles
+      .groups = 'drop'
+    )
+  
+  # Combine aggregated and average results
+  agg_results_combined <- bind_rows(agg_results, avg_results)
+  
+  # Store the combined aggregated results
+  results_list[[paste0("Scenario", selected_scenario, "_N", N, "_n_obs", n_obs)]] <- agg_results_combined
+  
+  # Aggregate time results
+  time_agg <- agg_results_combined %>%
+    group_by(Scenario, Scenario_Name, Method, N, n_obs) %>%
+    summarise(
+      Avg_Time_per_Replication = mean(Time_Taken, na.rm = TRUE),
+      .groups = 'drop'
+    )
+  
+  # Append to time_results
+  time_results <- bind_rows(time_results, time_agg)
+}
+
+##############################
+# Combine and Prepare Results
+##############################
+
+# Combine results from different sample sizes
+final_results <- do.call(rbind, results_list)
+
+data.table::fwrite(final_results, file.path(dataOut, paste0("sims_scenario_", selected_scenario, "_bw_", base_bw, ".csv")))
+
+final_results <- fread(file.path(dataOut, paste0("sims_scenario_", selected_scenario, "_bw_", base_bw, ".csv")))
+#final_results <- fread(file.path(dataOut, paste0("sims_scenario_", selected_scenario, ".csv")))
+
+
+# Filter for specific quantiles and "Average"
+desired_quantiles <- list(0.25, 0.5, 0.75, 999)
+final_results <- final_results %>%
+  filter(Quantile %in% desired_quantiles)
+
+# Reshape data for plotting
+# We'll reshape the data to a long format where each performance measure is a separate row
+performance_measures <- c("Bias", "MSE", "Relative_Bias", "SE")
+final_long <- final_results %>%
+  select(Scenario, Scenario_Name, Method, Quantile, N, n_obs, all_of(performance_measures)) %>%
+  pivot_longer(
+    cols = all_of(performance_measures),
+    names_to = "Measure",
+    values_to = "Value"
+  )
+
+
+# Separate "Average" quantile for plotting purposes
+final_long_plot <- final_long %>%
+  mutate(Quantile_Label = ifelse(Quantile == 999, "Average", paste0("Q", Quantile * 100)))
+
+# Define the order of quantiles for plotting
+final_long_plot$Quantile_Label <- factor(final_long_plot$Quantile_Label, 
+                                         levels = c("Q25", "Q50", "Q75", "Average"))
+
+final_long_plot[final_long_plot$Measure == "Relative_Bias",]$Value <- 
+  abs(final_long_plot[final_long_plot$Measure == "Relative_Bias",]$Value)
+final_long_plot[final_long_plot$Measure == "Bias",]$Value <- 
+  abs(final_long_plot[final_long_plot$Measure == "Bias",]$Value)
+final_long_plot <- final_long_plot[final_long_plot$Measure != "Relative_Bias",]
+
+##############################s
+# Plotting
+##############################
+
+# Create separate plots for the selected scenario
+for (sc in selected_scenario:selected_scenario) {  # Only the selected scenario
+  sc_name <- scenario_names[sc]
+  
+  # Filter data for the selected scenario
+  sc_data <- final_long_plot %>%
+    filter(Scenario == selected_scenario)
+  
+  # 1. Compute separate max_y for each Performance Measure
+  max_y_per_measure <- sc_data %>%
+    filter(!(Method == "Classical Quantile RDD" & N == 100)) %>%  # Exclude outliers
+    group_by(Measure) %>%                                        # Group by Performance Measure
+    summarise(ymax = quantile(Value, 0.8, na.rm = TRUE)) %>%   # Calculate 95th percentile
+    ungroup()
+  
+  # 2. Merge ymax back to the main data
+  sc_data <- sc_data %>%
+    left_join(max_y_per_measure, by = "Measure")
+  
+  # 3. Create a named list for facetted_pos_scales
+  named_scales <- setNames(
+    lapply(max_y_per_measure$ymax, function(ymax) {
+      scale_y_continuous(limits = c(NA, ymax))
+    }),
+    max_y_per_measure$Measure
+  )
+  
+  # 4. Plot using ggh4x
+  p <- ggplot(sc_data, aes(x = N, y = Value, color = Method, group = Method)) +
+    geom_line() +
+    geom_point() +
+    ggh4x::facet_grid2(
+      rows = vars(Measure),
+      cols = vars(Quantile_Label),
+      scales = "free_y"
+    ) +
+    ggh4x::facetted_pos_scales(
+      y = named_scales
+    ) +
+    theme_minimal() +
+    labs(
+      title = paste("Performance Measures vs Sample Size -", sc_name),
+      x = "Sample Size (N)",
+      y = "Performance Measure Value"
+    ) +
+    theme(
+      strip.text = element_text(size = 8),
+      axis.text = element_text(size = 6),
+      legend.position = "bottom",
+      legend.title = element_blank()
+    )
+  print(p)
+}
+
+##############################
+# Display Time Results
+##############################
+
+# Display Average Time Taken per Replication for the Selected Scenario and Method
+cat("Average Time Taken per Replication (in seconds):\n")
+print(time_results)
+}

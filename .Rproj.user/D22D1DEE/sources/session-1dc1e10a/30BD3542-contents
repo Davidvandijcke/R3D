@@ -1,0 +1,1678 @@
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[version=4]{mhchem}
+\usepackage{stmaryrd}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue, filecolor=magenta, urlcolor=cyan,}
+\urlstyle{same}
+\usepackage{bbold}
+\usepackage{mathrsfs}
+\usepackage{multirow}
+
+\title{Supplementary Material for "Robust Uniform Inference for Quantile Treatment Effects in Regression Discontinuity Designs"* }
+
+\author{Harold D. Chiang \({ }^{\dagger} \quad\) Yu-Chin \(\mathrm{Hsu}^{\ddagger} \quad\) Yuya Sasaki \({ }^{\S}\)}
+\date{}
+
+
+%New command to display footnote whose markers will always be hidden
+\let\svthefootnote\thefootnote
+\newcommand\blfootnotetext[1]{%
+  \let\thefootnote\relax\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \let\thefootnote\svthefootnote%
+}
+
+%Overriding the \footnotetext command to hide the marker if its value is `0`
+\let\svfootnotetext\footnotetext
+\renewcommand\footnotetext[2][?]{%
+  \if\relax#1\relax%
+    \ifnum\value{footnote}=0\blfootnotetext{#2}\else\svfootnotetext{#2}\fi%
+  \else%
+    \if?#1\ifnum\value{footnote}=0\blfootnotetext{#2}\else\svfootnotetext{#2}\fi%
+    \else\svfootnotetext[#1]{#2}\fi%
+  \fi
+}
+
+\begin{document}
+\maketitle
+March 11, 2019
+
+\begin{abstract}
+This supplementary material contains additional examples of the general framework (Section B), applications of the general results to the additional examples (Section D), simulation results for the additional examples (Section D), additional mathematical proofs (Section E), and a guide to bandwidth choice procedures in practice (Section F).
+\end{abstract}
+
+\footnotetext{*First arXiv version: February 24, 2017. Code files are available upon request. We would like to thank Bill Gormley for kindly approving our use of his data for our empirical application, Brigham Frandsen for kindly providing us with a working data set, and Fangzhu Yang for excellent research assistance. We benefited from useful comments by Matias Cattaneo, Yingying Dong, Oliver Linton (the co-editor), the associate editor, three anonymous referees, seminar participants at UC Davis, UC Irvine, and University of Tsukuba, and conference participants at ESEM 2017, IAAE 2017, IEAS Econometric Workshop: Theories and Applications 2017, LAMES 2017, New York Camp Econometrics XII, SETA 2017, Shanghai Econometrics Workshop 2017, and University of Tokyo Conference in Advances in Econometrics. All remaining errors are ours. Yu-Chin Hsu gratefully acknowledges the research support from Ministry of Science and Technology of Taiwan (MOST103-2628-H-001-001-MY4) and Career Development Award of Academia Sinica, Taiwan. This paper was previously circulated as "A Unified Robust Bootstrap Method for Sharp/Fuzzy Mean/Quantile Regression Discontinuity/Kink Designs."\\
+\({ }^{\dagger}\) Harold D. Chiang: \href{mailto:harold.d.chiang@vanderbilt.edu}{harold.d.chiang@vanderbilt.edu}. Department of Economics, Vanderbilt University.\\
+\({ }^{\ddagger}\) Yu-Chin Hsu: \href{mailto:ychsu@econ.sinica.edu.tw}{ychsu@econ.sinica.edu.tw}. Institute of Economics, Academia Sinica, and Department of Finance, National Central University.\\
+\({ }^{\S}\) Yuya Sasaki (Corresponding Author): \href{mailto:yuya.sasaki@vanderbilt.edu}{yuya.sasaki@vanderbilt.edu}. Department of Economics, Vanderbilt University.
+}\section*{Supplementary Material}
+\section*{B Additional Examples of the General Framework}
+\section*{B. 1 Example: Sharp Mean RDD}
+Sharp mean RDD is a special case of fuzzy mean RDD, where \(D_{i}=\mathbb{1}\left\{X_{i} \geq 0\right\}\). Thus, we can write \(\mu_{2}\left(x, \theta_{2}\right)=\mathrm{E}\left[D_{i} \mid X_{i}=x\right]=\mathbb{1}\{x \geq 0\}\), and the local Wald estimand (4.1) of the form (4.2) further reduces to
+
+\[
+\tau\left(\theta^{\prime \prime}\right)=\lim _{x \downarrow 0} \mathrm{E}\left[Y_{i} \mid X_{i}=x\right]-\lim _{x \uparrow 0} \mathrm{E}\left[Y_{i} \mid X_{i}=x\right]
+\]
+
+for all \(\theta^{\prime \prime} \in \Theta^{\prime \prime}=\{0\}\). This estimand \(\tau(0)\) will be denoted by \(\tau_{S M R D}\) for Sharp Mean RD design. For this estimand, Bartalotti, Calhoun, and He (2016) propose a robust bootstrap method of inference, and hence we are not the first to propose a robust bootstrap method for \(\tau_{S M R D}\). The benefit of our method is its applicability not only to \(\tau_{S M R D}\), but also to many other estimands of the form (4.1).
+
+\section*{B. 2 Example: Fuzzy Mean RKD}
+Define \(\Theta_{1}, \Theta_{2}, \Theta_{1}^{\prime}, \Theta_{2}^{\prime}, \Theta^{\prime \prime}, g_{1}, g_{2}, \phi, \psi\), and \(\Upsilon\) as in Example 1. The local Wald estimand (4.1) with \(v=1\) in this setting becomes
+
+\[
+\tau\left(\theta^{\prime \prime}\right)=\frac{\lim _{x \downarrow 0} \frac{\partial}{\partial x} \mathrm{E}\left[Y_{i} \mid X_{i}=x\right]-\lim _{x \uparrow 0} \frac{\partial}{\partial x} \mathrm{E}\left[Y_{i} \mid X_{i}=x\right]}{\lim _{x \downarrow 0} \frac{\partial}{\partial x} \mathrm{E}\left[D_{i} \mid X_{i}=x\right]-\lim _{x \uparrow 0} \frac{\partial}{\partial x} \mathrm{E}\left[D_{i} \mid X_{i}=x\right]}
+\]
+
+for all \(\theta^{\prime \prime} \in \Theta^{\prime \prime}=\{0\}\). This estimand \(\tau(0)\) will be denoted by \(\tau_{F M R K}\) for Fuzzy Mean RK design. See Card, Lee, Pei, and Weber (2016) for a causal interpretation of this estimand.
+
+\section*{B. 3 Example: Sharp Mean RKD}
+Sharp mean RKD is a special case of fuzzy mean RKD where the treatment is defined by \(E\left[g_{2}\left(D_{i}, \theta_{2}\right) \mid X_{i}\right]=\) \(b\left(X_{i}\right)\) through a known function \(b\). Thus, the local Wald estimand (4.1) of the form (B.1) further reduces to
+
+\[
+\tau\left(\theta^{\prime \prime}\right)=\frac{\lim _{x \downarrow 0} \frac{\partial}{\partial x} \mathrm{E}\left[Y_{i} \mid X_{i}=x\right]-\lim _{x \uparrow 0} \frac{\partial}{\partial x} \mathrm{E}\left[Y_{i} \mid X_{i}=x\right]}{\lim _{x \downarrow 0} b^{(1)}(x)-\lim _{x \uparrow 0} b^{(1)}(x)}
+\]
+
+for all \(\theta^{\prime \prime} \in \Theta^{\prime \prime}=\{0\}\). This estimand \(\tau(0)\) will be denoted by \(\tau_{S M R K}\) for Sharp Mean RK design. See Card, Lee, Pei, and Weber (2016) for a causal interpretation of this estimand.
+
+\section*{B. 4 Example: CDF Discontinuity and Test of Stochastic Dominance}
+Let \(\Theta_{1}=\Theta_{1}^{\prime}=\Theta^{\prime \prime}=\mathscr{Y}\) for \(\mathscr{Y} \subset \mathbb{R}\), and let \(\Theta_{2}=\Theta_{2}^{\prime}=\{0\}\). Set \(g_{1}\left(Y_{i}, \theta_{1}\right)=\mathbb{1}\left\{Y_{i} \leq \theta_{1}\right\}\) and \(g_{2}\left(D_{i}, \theta_{2}\right)=D_{i}\), where \(D_{i}=\mathbb{1}\left\{X_{i} \geq 0\right\}\) holds under the sharp RD design. Note that \(\mu_{1}\left(x, \theta_{1}\right)=\) \(\mathrm{E}\left[g_{1}\left(Y_{i}, \theta_{1}\right) \mid X_{i}=x\right]=F_{Y \mid X}\left(\theta_{1} \mid x\right)\) and \(\mu_{2}\left(x, \theta_{2}\right)=\mathrm{E}\left[g_{2}\left(D_{i}, \theta_{2}\right) \mid X_{i}=x\right]=\mathrm{E}\left[D_{i} \mid X_{i}=x\right]=\mathbb{1}\{x \geq 0\}\). Let \(\phi\) and \(\psi\) be the identity operators, and for \(W \in \ell^{\infty}\left(\Theta_{1}^{\prime} \times \Theta_{2}^{\prime}\right)\), define \(\Upsilon\) as \(\Upsilon(W)\left(\theta^{\prime \prime}\right)=W\left(\theta^{\prime \prime}, 0\right)\) \(\forall \theta^{\prime \prime} \in \Theta^{\prime \prime}\). The local Wald estimand (4.1) with \(v=0\) in this setting becomes
+
+\[
+\tau\left(\theta^{\prime \prime}\right)=\lim _{x \downarrow 0} F_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right)-\lim _{x \uparrow 0} F_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right)
+\]
+
+for all \(\theta^{\prime \prime} \in \Theta^{\prime \prime}=\mathscr{Y} \subset \mathbb{R}\). This estimand \(\tau\) will be denoted by \(\tau_{S C R D}\) for Sharp CDF RD design. This estimand may be useful to test the hypothesis of stochastic dominance \(\left(\tau\left(\theta^{\prime \prime}\right) \leq 0\right.\) for all \(\left.\theta^{\prime \prime} \in \Theta^{\prime \prime}\right)\). See Shen and Zhang (2016) for this estimand and hypothesis testing.
+
+\section*{B. 5 Example: Sharp Quantile RDD}
+Denote \(Q_{Y \mid X}\left(\theta^{\prime \prime}\right):=\inf \left\{y \in \mathscr{Y}: F_{Y \mid X}(y) \geq \theta^{\prime \prime}\right\}\), fix an \(a \in(0,1 / 2), \varepsilon>0\) and let \(\mathscr{\mathscr { Y }}_{1}=\left[Q_{Y \mid X}\left(a \mid 0^{-}\right)-\right.\) \(\left.\varepsilon, Q_{Y \mid X}\left(1-a \mid 0^{-}\right)+\varepsilon\right] \cup\left[Q_{Y \mid X}\left(a \mid 0^{+}\right)-\varepsilon, Q_{Y \mid X}\left(1-a \mid 0^{+}\right)+\varepsilon\right]\).
+
+Let \(\Theta_{1}=\mathscr{Y}_{1}, \Theta_{1}^{\prime}=\Theta^{\prime \prime}=[a, 1-a]\) and \(\Theta_{2}=\Theta_{2}^{\prime}=\{0\}\). Set \(g_{1}\left(Y_{i}, \theta_{1}\right)=\mathbb{1}\left\{Y_{i} \leq \theta_{1}\right\}\) and \(g_{2}\left(D_{i}, \theta_{2}\right)=\) \(D_{i}\), where \(D_{i}=\mathbb{1}\left\{X_{i} \geq 0\right\}\) holds under the sharp RDD. Note that \(\mu_{1}\left(x, \theta_{1}\right)=\mathrm{E}\left[g_{1}\left(Y_{i}, \theta_{1}\right) \mid X_{i}=x\right]=\) \(F_{Y \mid X}\left(\theta_{1} \mid x\right)\) and \(\mu_{2}\left(x, \theta_{2}\right)=\mathrm{E}\left[g_{2}\left(D_{i}, \theta_{2}\right) \mid X_{i}=x\right]=\mathrm{E}\left[D_{i} \mid X_{i}=x\right]=\mathbb{1}\{x \geq 0\}\). Let \(\phi\left(F_{Y \mid X}(\cdot \mid x)\right)\left(\theta^{\prime}\right)=\) \(\inf \left\{\theta_{1} \in \Theta_{1}: F_{Y \mid X}\left(\theta_{1} \mid x\right) \geq \theta^{\prime}\right\} \forall \theta^{\prime} \in \Theta_{1}^{\prime}, \psi(\mathbb{1}\{x \geq 0\})\left(\theta^{\prime}\right)=\mathbb{1}\{x \geq 0\} \forall \theta^{\prime} \in \Theta_{2}^{\prime}=\{0\}\), and for \(W \in \ell^{\infty}\left(\Theta_{1}^{\prime} \times \Theta_{2}^{\prime}\right)\) let the operator \(\Upsilon\) be the mapping \(\Upsilon(W)\left(\theta^{\prime \prime}\right)=W\left(\theta^{\prime \prime}, 0\right) \forall \theta^{\prime \prime} \in \Theta^{\prime \prime}\). The local Wald estimand (4.1) with \(v=0\) in this setting becomes
+
+\[
+\tau\left(\theta^{\prime \prime}\right)=\lim _{x \downarrow 0} Q_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right)-\lim _{x \uparrow 0} Q_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right)
+\]
+
+for all \(\theta^{\prime \prime} \in \Theta^{\prime \prime}=[a, 1-a]\), where \(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right):=\inf \left\{\theta_{1} \in \Theta_{1}: F_{Y \mid X}\left(\theta_{1} \mid x\right) \geq \theta^{\prime \prime}\right\}\) for a short-hand notation. This estimand \(\tau\) will be denoted by \(\tau_{S Q R D}\) for Sharp Quantile RD design. For this estimand, Qu and Yoon (2015b) propose a method of uniform inference based on uniform random sampling, and hence we are not the first to propose a bootstrap method for \(\tau_{S Q R D}\). Our method adds the property of robustness to this existing method, besides the main result that it applies to other estimands too.
+
+\section*{B. 6 Example: Fuzzy Quantile RKD}
+Let \(\mathscr{Y}_{1}=\left[Q_{Y \mid X}(a \mid 0)-\varepsilon, Q_{Y \mid X}(1-a \mid 0)+\varepsilon\right], \Theta_{1}=\mathscr{Y}_{1}, \Theta_{1}^{\prime}=\Theta^{\prime \prime}=[a, 1-a]\) for a constant \(a \in(0,1 / 2)\), and \(\Theta_{2}=\Theta_{2}^{\prime}=\{0\}\). We set \(g_{1}\left(Y_{i}, \theta_{1}\right)=\mathbb{1}\left\{Y_{i} \leq \theta_{1}\right\}\) and \(g_{2}\left(D_{i}, \theta_{2}\right)=D_{i}\). Note that \(\mu_{1}\left(x, \theta_{1}\right)=\) \(\mathrm{E}\left[g_{1}\left(Y_{i}, \theta_{1}\right) \mid X_{i}=x\right]=F_{Y \mid X}\left(\theta_{1} \mid x\right)\) and \(\mu_{2}\left(x, \theta_{2}\right)=\mathrm{E}\left[g_{2}\left(D_{i}, \theta_{2}\right) \mid X_{i}=x\right]=\mathrm{E}\left[D_{i} \mid X_{i}=x\right]\). With the short-hand notations \(f_{Y \mid X}=\frac{\partial}{\partial y} F_{Y \mid X}\) and \(F_{Y \mid X}^{(1)}:=\frac{\partial}{\partial x} F_{Y \mid X}\), let
+
+\[
+\phi\left(F_{Y \mid X}^{(1)}(\cdot \mid x)\right)\left(\theta^{\prime}\right):=-\frac{F_{Y \mid X}^{(1)}\left(\inf \left\{\theta \in \Theta_{1}: F_{Y \mid X}(\theta \mid 0) \geq \theta^{\prime}\right\} \mid x\right)}{f_{Y \mid X}\left(\inf \left\{\theta \in \Theta_{1}: F_{Y \mid X}(\theta \mid 0) \geq \theta^{\prime}\right\} \mid x\right)} \quad \forall \theta^{\prime} \in \Theta_{1}^{\prime},
+\]
+
+let \(\psi\) be the identity operator, and for \(W \in \ell^{\infty}\left(\Theta_{1}^{\prime} \times \Theta_{2}^{\prime}\right)\), let the operator \(\Upsilon\) be \(\Upsilon(W)\left(\theta^{\prime \prime}\right)=W\left(\theta^{\prime \prime}, 0\right)\) \(\forall \theta^{\prime \prime} \in \Theta^{\prime \prime}\). We emphasize that \(F_{Y \mid X}^{(1)}(\cdot \mid x)\) does not map to \(f_{Y \mid X}(\cdot \mid 0)\) or \(F_{Y \mid X}(\cdot \mid 0)\) in the definition of \(\phi\); instead \(f_{Y \mid X}(\cdot \mid 0)\) and \(F_{Y \mid X}(\cdot \mid 0)\) are embedded in the definition of \(\phi\). It will be shown that \(\phi\left(F_{Y \mid X}^{(1)}(\cdot \mid x)\right)\left(\theta^{\prime \prime}\right)=\frac{\partial}{\partial x} Q_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right)\). The local Wald estimand (4.1) with \(v=1\) in this setting becomes
+
+\[
+\tau\left(\theta^{\prime \prime}\right)=\frac{\lim _{x \downarrow 0} \frac{\partial}{\partial x} Q_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right)-\lim _{x \uparrow 0} \frac{\partial}{\partial x} Q_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right)}{\lim _{x \downarrow 0} \frac{d}{d x} \mathrm{E}\left[D_{i} \mid X_{i}=x\right]-\lim _{x \uparrow 0} \frac{d}{d x} \mathrm{E}\left[D_{i} \mid X_{i}=x\right]}
+\]
+
+for all \(\theta^{\prime \prime} \in \Theta^{\prime \prime}=[a, 1-a]\). This estimand \(\tau\) will be denoted by \(\tau_{F Q R K}\) for Fuzzy Quantile RK design. See Chiang and Sasaki (2019) for its causal interpretation.
+
+\section*{B. 7 Example: Sharp Quantile RKD}
+Sharp quantile RKD is a special case of fuzzy quantile RKD where the treatment is defined by \(D_{i}=b\left(X_{i}\right)\) as a known function \(b\) of \(X_{i}\). Thus, the local Wald estimand (4.1) of the form (B.2) further reduces to
+
+\[
+\tau\left(\theta^{\prime \prime}\right)=\frac{\lim _{x \downarrow 0} \frac{\partial}{\partial x} Q_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right)-\lim _{x \uparrow 0} \frac{\partial}{\partial x} Q_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right)}{\lim _{x \downarrow 0} b^{(1)}(x)-\lim _{x \uparrow 0} b^{(1)}(x)}
+\]
+
+for all \(\theta^{\prime \prime} \in \Theta^{\prime \prime}=[a, 1-a]\). This estimand \(\tau\) will be denoted by \(\tau_{S Q R K}\) for Sharp Quantile RK design. See Chiang and Sasaki (2019) for its causal interpretation.
+
+\section*{B. 8 Example: Group Covariate and Test of Heterogeneous Treatment Effects}
+Suppose that a researcher wants to make a joint inference for the average causal effects across observed heterogeneous groups \(G_{i}\) taking categorical values in \(\Theta_{1}=\Theta_{2}=\Theta_{1}^{\prime}=\Theta_{2}^{\prime}=\Theta^{\prime \prime}=\{1, \cdots, K\}\) by RDD. Let \(Y_{i}=\left(Y_{i}^{*}, G_{i}\right)\) and \(D_{i}=\left(D_{i}^{*}, G_{i}\right)\). Set \(g_{1}\left(\left(Y_{i}^{*}, G_{i}\right), \theta_{1}\right)=Y_{i}^{*} \cdot \mathbb{1}\left\{G_{i}=\theta_{1}\right\}\) and \(g_{2}\left(\left(D_{i}^{*}, G_{i}\right), \theta_{2}\right)=D_{i}^{*} \cdot \mathbb{1}\left\{G_{i}=\theta_{2}\right\}\). Note that \(\mu_{1}\left(x, \theta_{1}\right)=\mathrm{E}\left[g_{1}\left(\left(Y_{i}^{*}, G_{i}\right), \theta_{1}\right) \mid X_{i}=x\right]=\mathrm{E}\left[Y_{i}^{*} \cdot \mathbb{1}\left\{G_{i}=\right.\right.\) \(\left.\left.\theta_{1}\right\} \mid X_{i}=x\right]\) and \(\mu_{2}\left(x, \theta_{2}\right)=\mathrm{E}\left[g_{2}\left(\left(D_{i}^{*}, G_{i}\right), \theta_{2}\right) \mid X_{i}=x\right]=\mathrm{E}\left[D_{i}^{*} \cdot \mathbb{1}\left\{G_{i}=\theta_{2}\right\} \mid X_{i}=x\right]\). Let \(\phi\) and \(\psi\) be the identity operators, and for \(W \in \ell^{\infty}\left(\Theta_{1}^{\prime} \times \Theta_{2}^{\prime}\right)\), define the operator \(\Upsilon\) be \(\Upsilon(W)\left(\theta^{\prime \prime}\right)=W\left(\theta^{\prime \prime}, \theta^{\prime \prime}\right)\) for all \(\theta^{\prime \prime} \in \Theta^{\prime \prime}\). The local Wald estimand (4.1) with \(v=0\) in this setting becomes
+
+\[
+\tau\left(\theta^{\prime \prime}\right)=\frac{\lim _{x \downarrow 0} E\left[Y_{i}^{*} \cdot \mathbb{1}\left\{G_{i}=\theta^{\prime \prime}\right\} \mid X_{i}=x\right]-\lim _{x \uparrow 0} E\left[Y_{i}^{*} \cdot \mathbb{1}\left\{G_{i}=\theta^{\prime \prime}\right\} \mid X_{i}=x\right]}{\lim _{x \downarrow 0} E\left[D_{i}^{*} \cdot \mathbb{1}\left\{G_{i}=\theta^{\prime \prime}\right\} \mid X_{i}=x\right]-\lim _{x \uparrow 0} E\left[D_{i}^{*} \cdot \mathbb{1}\left\{G_{i}=\theta^{\prime \prime}\right\} \mid X_{i}=x\right]}
+\]
+
+for all \(\theta^{\prime \prime} \in \Theta^{\prime \prime}=\{1, \cdots, K\}\). This estimand \(\tau\) will be denoted by \(\tau_{G F M R D}\) for Group Fuzzy Mean RD design. This estimand may be useful to test the hypotheses of heterogeneous treatment effects \(\left(\tau\left(\theta_{1}^{\prime \prime}\right) \neq \tau\left(\theta_{2}^{\prime \prime}\right)\right.\) for some \(\left.\theta_{1}^{\prime \prime}, \theta_{2}^{\prime \prime} \in \Theta^{\prime \prime}\right)\) or unambiguous treatment significance \(\left(\tau\left(\theta^{\prime \prime}\right)>0\right.\) for all \(\left.\theta^{\prime \prime} \in \Theta^{\prime \prime}\right)\). While we introduced this group estimand for the fuzzy mean regression discontinuity design, we remark that a similar estimand can be developed for any combinations of sharp/fuzzy mean/quantile regression discontinuity/kink designs.
+
+\section*{C Applications of the General Results to the Ten Examples}
+In this section, we apply the general results to the additional examples introduced in Example 1 as well as Sections B.1-B.8. Throughout this section, we present our assumptions for the case of \(p=2\). We remark that, however, using a different order \(p\) of local polynomial fitting is also possible by similar arguments.
+
+\section*{C. 1 Example: Fuzzy Mean RDD}
+Consider \(\Theta_{1}, \Theta_{2}, \Theta_{1}^{\prime}, \Theta_{2}^{\prime}, \Theta^{\prime \prime}, g_{1}, g_{2}, \phi, \psi\), and \(\Upsilon\) defined in Example 1. Recall that we denote the local Wald estimand (4.1) with \(v=1\) in this setting by \(\tau_{F M R D}\). We also denote the analog estimator (4.5) with \(v=1\) in this setting by
+
+\[
+\hat{\tau}_{F M R D}=\frac{\hat{\mu}_{1,2}\left(0^{+}, 0\right)-\hat{\mu}_{1,2}\left(0^{-}, 0\right)}{\hat{\mu}_{2,2}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}\left(0^{-}, 0\right)}
+\]
+
+For this application, we consider the following set of assumptions.
+
+\section*{Assumption FMRD.}
+(i) (a) \(E\left[|Y|^{2+\epsilon} \mid X=\cdot\right]<\infty\) on \([\underline{x}, \bar{x}] \backslash\{0\}\) for some \(\epsilon>0\). (b) \(\frac{\partial^{j}}{\partial x^{j}} E[Y \mid X=\cdot]\) and \(\frac{\partial^{j}}{\partial x^{j}} E[D \mid X=\cdot]\) are Lipschitz on \([\underline{x}, 0)\) and ( \(0, \bar{x}]\) for \(j=0,1,2,3\). (d) \(E\left[D \mid X=0^{+}\right] \neq E\left[D \mid X=0^{-}\right]\).\\
+(ii) The baseline bandwidth \(h_{n}\) satisfies \(h_{n} \rightarrow 0, n h_{n}^{2} \rightarrow \infty, n h_{n}^{7} \rightarrow 0\). There exist constants \(c_{1}, c_{2}\) such that \(h_{1, n}=c_{1} h_{n}\) and \(h_{2, n}=c_{2} h_{n}\).\\
+(iii) \(V(Y \mid X=\cdot), V(D \mid X=\cdot) \in \mathcal{C}^{1}([\underline{x}, \bar{x}] \backslash\{0\})\) with bounded derivatives in \(x\) and \(0<V(Y \mid X=\) \(\left.0^{ \pm}\right)<\infty\)
+
+For \(k \in\{1,2\}\), define
+
+\[
+\widehat{\mathbb{X}}_{n}^{\prime}(0, k)=\frac{1}{\sqrt{c_{k}}}\left[\hat{\nu}_{\xi, n}^{+}(0, k)-\hat{\nu}_{\xi, n}^{-}(0, k)\right]
+\]
+
+where the EMP is given by
+
+\[
+\begin{aligned}
+& \hat{\nu}_{\xi, n}^{ \pm}(0,1)=\sum_{i=1}^{n} \xi_{i} \frac{e_{0}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[Y_{i}-\tilde{\mu}_{1,2}\left(X_{i}, 0\right)\right] r_{2}\left(\frac{X_{i}}{h_{1, n}}\right) K\left(\frac{X_{i}}{h_{1, n}}\right) \delta_{i}^{ \pm}}{\sqrt{n h_{1, n}} \hat{f}_{X}(0)} \\
+& \hat{\nu}_{\xi, n}^{ \pm}(0,2)=\sum_{i=1}^{n} \xi_{i} \frac{e_{0}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[D_{i}-\tilde{\mu}_{2,2}\left(X_{i}, 0\right)\right] r_{2}\left(\frac{X_{i}}{h_{2, n}}\right) K\left(\frac{X_{i}}{h_{2, n}}\right) \delta_{i}^{ \pm}}{\sqrt{n h_{2, n}} \hat{f}_{X}(0)}
+\end{aligned}
+\]
+
+and \(\tilde{\mu}_{k, 2}\left(0^{ \pm}, 0\right)\) is defined in Lemma 7. Our general result applied to the current case yields the following corollary.\\
+Corollary 2 (Example: Fuzzy Mean RDD). Suppose that Assumptions S, K, M, and FMRD hold.\\
+(i) There exists \(\sigma_{F M R D}>0\) such that
+
+\[
+\sqrt{n h_{n}}\left[\hat{\tau}_{F M R D}-\tau_{F M R D}\right] \rightsquigarrow N\left(0, \sigma_{F M R D}^{2}\right) .
+\]
+
+(ii) Furthermore, with probability approaching one,
+
+\[
+\frac{\left(\hat{\mu}_{2,2}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,1)-\left(\hat{\mu}_{1,2}\left(0^{+}, 0\right)-\hat{\mu}_{1,2}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,2)}{\left(\hat{\mu}_{2,2}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}\left(0^{-}, 0\right)\right)^{2}} \underset{\xi}{\underset{\xi}{p}} N\left(0, \sigma_{F M R D}^{2}\right) .
+\]
+
+A proof is provided in Section E.2.2. Perhaps the most practically relevant application of this corollary is the test of the null hypothesis of treatment nullity:
+
+\[
+H_{0}: \tau_{F M R D}=0
+\]
+
+To test this hypothesis, we can use \(\sqrt{n h_{n}}\left|\hat{\tau}_{F M R D}\right|\) as the test statistic, and use
+
+\[
+\left|\frac{\left(\hat{\mu}_{2,2}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,1)-\left(\hat{\mu}_{1,2}\left(0^{+}, 0\right)-\hat{\mu}_{1,2}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,2)}{\left(\hat{\mu}_{2,2}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}\left(0^{-}, 0\right)\right)^{2}}\right|
+\]
+
+to simulate its asymptotic distribution.
+
+\section*{C. 2 Example: Sharp Mean RDD}
+Consider \(\Theta_{1}, \Theta_{2}, \Theta_{1}^{\prime}, \Theta_{2}^{\prime}, \Theta^{\prime \prime}, g_{1}, g_{2}, \phi, \psi\), and \(\Upsilon\) defined in Section B.1. Recall that we denote the local Wald estimand (4.1) with \(v=0\) in this setting by \(\tau_{S M R D}\). We also denote the analog estimator (4.5) with \(v=0\) in this setting by
+
+\[
+\hat{\tau}_{S M R D}=\hat{\mu}_{1,2}\left(0^{+}, 0\right)-\hat{\mu}_{1,2}\left(0^{-}, 0\right)
+\]
+
+For this application, we consider the following set of assumptions.
+
+\section*{Assumption SMRD.}
+(i) (a) \(E\left[|Y|^{2+\epsilon} \mid X=\cdot\right]<\infty\) on \([\underline{x}, \bar{x}] \backslash\{0\}\) for some \(\epsilon>0\). (b) \(\frac{\partial^{j}}{\partial x^{j}} E[Y \mid X=\cdot]\) is Lipschitz on \([\underline{x}, 0\) ) and \((0, \bar{x}]\) for \(j=0,1,2,3\).\\
+(ii) \(h_{n}\) satisfies \(h_{n} \rightarrow 0, n h_{n}^{7} \rightarrow 0\) and \(n h_{n}^{2} \rightarrow \infty\).\\
+(iii) \(V(Y \mid X=\cdot) \in \mathcal{C}^{1}([\underline{x}, \bar{x}] \backslash\{0\})\) with bounded derivative in \(x\) and \(0<V\left(Y \mid X=0^{ \pm}\right)<\infty\)
+
+Define the EMP
+
+\[
+\hat{\nu}_{\xi, n}^{ \pm}=\sum_{i=1}^{n} \xi_{i} \frac{e_{0}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[Y_{i}-\tilde{\mu}_{1,2}\left(X_{i}, 0\right)\right] r_{2}\left(\frac{X_{i}}{h_{n}}\right) K\left(\frac{X_{i}}{h_{n}}\right) \delta_{i}^{ \pm}}{\sqrt{n h_{n}} \hat{f}_{X}(0)},
+\]
+
+where \(\tilde{\mu}_{1,2}\) is defined in the statement of Lemma 7. Our general result applied to the current case yields the following corollary.
+
+\section*{Supplementary Material}
+Corollary 3 (Example: Sharp Mean RDD). Suppose that Assumptions S, K, M, and SMRD hold.\\
+(i) There exists \(\sigma_{S M R D}>0\) such that
+
+\[
+\sqrt{n h_{n}}\left[\hat{\tau}_{S M R D}-\tau_{S M R D}\right] \rightsquigarrow N\left(0, \sigma_{S M R D}^{2}\right)
+\]
+
+(ii) Furthermore, with probability approaching one,
+
+\[
+\hat{\nu}_{\xi, n}^{+}-\hat{\nu}_{\xi, n}^{-} \underset{\xi}{\underset{\sim}{w}} N\left(0, \sigma_{S M R D}^{2}\right) .
+\]
+
+A proof is provided in Section E.2.3. Perhaps the most practically relevant application of this corollary is the test of the null hypothesis of treatment nullity:
+
+\[
+H_{0}: \tau_{S M R D}=0 .
+\]
+
+To test this hypothesis, we can use \(\sqrt{n h_{n}}\left|\hat{\tau}_{S M R D}\right|\) as the test statistic, and use \(\left|\hat{\nu}_{\xi, n}^{+}-\hat{\nu}_{\xi, n}^{-}\right|\)to simulate its asymptotic distribution.
+
+\section*{C. 3 Example: Fuzzy Mean RKD}
+Consider \(\Theta_{1}, \Theta_{2}, \Theta_{1}^{\prime}, \Theta_{2}^{\prime}, \Theta^{\prime \prime}, g_{1}, g_{2}, \phi, \psi\), and \(\Upsilon\) defined in Section B.2. Recall that we denote the local Wald estimand (4.1) with \(v=1\) in this setting by \(\tau_{F M R K}\). We also denote the analog estimator (4.5) with \(v=1\) in this setting by
+
+\[
+\hat{\tau}_{F M R K}=\frac{\hat{\mu}_{1,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{1,2}^{(1)}\left(0^{-}, 0\right)}{\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)}
+\]
+
+For this application, we consider the following set of assumptions.\\
+Assumption FMRK.\\
+(i) (a) \(E\left[|Y|^{2+\epsilon} \mid X=\cdot\right]<\infty\) and \(E\left[|D|^{2+\epsilon} \mid X=\cdot\right]<\infty\) on \([\underline{x}, \bar{x}] \backslash\{0\}\) for some \(\epsilon>0\). (b) \(\frac{\partial^{j}}{\partial x^{j}} E[Y \mid X=\cdot]\) and \(\frac{\partial^{j}}{\partial x^{j}} E[D \mid X=\cdot]\) are Lipschitz on \([\underline{x}, 0)\) and \((0, \bar{x}]\) for \(j=0,1,2,3\). (c) \(\frac{\partial}{\partial x} E\left[D \mid X=0^{+}\right] \neq\) \(\frac{\partial}{\partial x} E\left[D \mid X=0^{-}\right]\).\\
+(ii) The baseline bandwidth \(h_{n}\) satisfies \(h_{n} \rightarrow 0, n h_{n}^{3} \rightarrow \infty, n h_{n}^{7} \rightarrow 0\). There exist constant \(c_{1}, c_{2}\) such that \(h_{1, n}=c_{1} h_{n}\) and \(h_{2, n}=c_{2} h_{n}\).\\
+(iii) \(V(Y \mid X=\cdot), V(D \mid X=\cdot) \in \mathcal{C}^{1}([\underline{x}, \bar{x}] \backslash\{0\})\) with bounded derivatives in \(x\) and \(0<V(Y \mid X=\) \(\left.0^{ \pm}\right)<\infty\)
+
+For \(k \in\{1,2\}\), define
+
+\[
+\widehat{\mathbb{X}}_{n}^{\prime}(0, k)=\frac{1}{\sqrt{c_{k}^{3}}}\left[\hat{\nu}_{\xi, n}^{+}(0, k)-\hat{\nu}_{\xi, n}^{-}(0, k)\right],
+\]
+
+where the EMP is given by
+
+\[
+\begin{aligned}
+& \hat{\nu}_{\xi, n}^{ \pm}(0,1)=\sum_{i=1}^{n} \xi_{i} \frac{e_{1}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[Y_{i}-\tilde{\mu}_{1,2}\left(X_{i}, 0\right)\right] r_{2}\left(\frac{X_{i}}{h_{1, n}}\right) K\left(\frac{X_{i}}{h_{1, n}}\right) \delta_{i}^{ \pm}}{\sqrt{n h_{1, n}} \hat{f}_{X}(0)} \\
+& \hat{\nu}_{\xi, n}^{ \pm}(0,2)=\sum_{i=1}^{n} \xi_{i} \frac{e_{1}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[D_{i}-\tilde{\mu}_{2,2}\left(X_{i}, 0\right)\right] r_{2}\left(\frac{X_{i}}{h_{2, n}}\right) K\left(\frac{X_{i}}{h_{2, n}}\right) \delta_{i}^{ \pm}}{\sqrt{n h_{2, n}} \hat{f}_{X}(0)}
+\end{aligned}
+\]
+
+and \(\tilde{\mu}_{k, 2}\left(0^{ \pm}, 0\right)\) is defined in Lemma 7. Our general result applied to the current case yields the following corollary.
+
+\section*{Supplementary Material}
+Corollary 4 (Example: Fuzzy Mean RKD). Suppose that Assumptions S, K, M, and FMRK hold.\\
+(i) There exists \(\sigma_{F M R K}>0\) such that
+
+\[
+\sqrt{n h_{n}^{3}}\left[\hat{\tau}_{F M R K}-\tau_{F M R K}\right] \rightsquigarrow N\left(0, \sigma_{F M R K}^{2}\right) .
+\]
+
+(ii) Furthermore, with probability approaching one,
+
+\[
+\frac{\left(\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,1)-\left(\hat{\mu}_{1,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{1,2}^{(1)}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,2)}{\left(\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right)^{2}} \underset{\xi}{\underset{\xi}{p}} N\left(0, \sigma_{F M R K}^{2}\right) .
+\]
+
+This corollary can be proved similarly to Corollary 2. Perhaps the most practically relevant application of this corollary is the test of the null hypothesis of treatment nullity:
+
+\[
+H_{0}: \tau_{F M R K}=0
+\]
+
+To test this hypothesis, we can use \(\sqrt{n h_{n}^{3}}\left|\hat{\tau}_{F M R K}\right|\) as the test statistic, and use
+
+\[
+\left|\frac{\left(\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,1)-\left(\hat{\mu}_{1,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{1,2}^{(1)}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,2)}{\left(\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right)^{2}}\right|
+\]
+
+to simulate its asymptotic distribution.
+
+\section*{C. 4 Example: Sharp Mean RKD}
+Consider \(\Theta_{1}, \Theta_{2}, \Theta_{1}^{\prime}, \Theta_{2}^{\prime}, \Theta^{\prime \prime}, g_{1}, g_{2}, \phi, \psi\), and \(\Upsilon\) defined in Section B.3. Recall that we denote the local Wald estimand (4.1) with \(v=1\) in this setting by \(\tau_{S M R K}\). We also denote the analog estimator (4.5) with \(v=1\) in this setting by
+
+\[
+\hat{\tau}_{S M R K}=\frac{\hat{\mu}_{1,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{1,2}^{(1)}\left(0^{-}, 0\right)}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)} .
+\]
+
+For this application, we consider the following set of assumptions.
+
+\section*{Assumption SMRK.}
+(i) (a) \(E\left[|Y|^{2+\epsilon} \mid X=\cdot\right]<\infty\) on \([\underline{x}, \bar{x}] \backslash\{0\}\) for some \(\epsilon>0\). (b) \(\frac{\partial^{j}}{\partial x^{j}} E[Y \mid X=\cdot]\) is Lipschitz on \([\underline{x}, 0\) ) and \((0, \bar{x}]\) for \(j=0,1,2,3\).\\
+(ii) \(h_{n}\) satisfies \(h_{n} \rightarrow 0, n h_{n}^{3} \rightarrow \infty\) and \(n h_{n}^{7} \rightarrow 0\).\\
+(iii) \(V(Y \mid X=x) \in \mathcal{C}^{1}([\underline{x}, \bar{x}] \backslash\{0\})\) with bounded derivative in \(x\) and \(0<V\left(Y \mid X=0^{ \pm}\right)<\infty\)\\
+(iv) \(b\) is continuously differentiable on \(I \backslash\{0\}\) and \(b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right) \neq 0\).
+
+Define the EMP
+
+\[
+\hat{\nu}_{\xi, n}^{ \pm}=\sum_{i=1}^{n} \xi_{i} \frac{e_{1}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[Y_{i}-\tilde{\mu}_{1,2}\left(X_{i}, 0\right)\right] r_{2}\left(\frac{X_{i}}{h_{n}}\right) K\left(\frac{X_{i}}{h_{n}}\right) \delta_{i}^{ \pm}}{\sqrt{n h_{n}} \hat{f}_{X}(0)},
+\]
+
+where \(\tilde{\mu}_{1,2}\) is defined in the statement of Lemma 7. Our general result applied to the current case yields the following corollary.\\
+Corollary 5 (Example: Sharp Mean RKD). Suppose that Assumptions S, K, M, and SMRK hold.\\
+(i) There exists \(\sigma_{S M R K}>0\) such that
+
+\[
+\sqrt{n h_{n}^{3}}\left[\hat{\tau}_{S M R K}-\tau_{S M R K}\right] \rightsquigarrow N\left(0, \sigma_{S M R K}^{2}\right) .
+\]
+
+(ii) Furthermore, with probability approaching one,
+
+\[
+\frac{\hat{\nu}_{\xi, n}^{+}-\hat{\nu}_{\xi, n}^{-}}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)} \stackrel{p}{\underset{\xi}{\underset{\sim}{w}}} N\left(0, \sigma_{S M R K}^{2}\right) .
+\]
+
+\section*{Supplementary Material}
+This corollary can be proved similarly to Corollary 3. Perhaps the most practically relevant application of this corollary is the test of the null hypothesis of treatment nullity:
+
+\[
+H_{0}: \tau_{S M R K}=0
+\]
+
+To test this hypothesis, we can use \(\sqrt{n h_{n}^{3}}\left|\hat{\tau}_{S M R K}\right|\) as the test statistic, and use \(\left|\frac{\hat{\nu}_{\xi, n}^{+}-\hat{\nu}_{\xi, n}^{-}}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)}\right|\)to simulate its asymptotic distribution.
+
+\section*{C. 5 Example: CDF Discontinuity and Test of Stochastic Dominance}
+Consider \(\Theta_{1}, \Theta_{2}, \Theta_{1}^{\prime}, \Theta_{2}^{\prime}, \Theta^{\prime \prime}, g_{1}, g_{2}, \phi, \psi\), and \(\Upsilon\) defined in Section B.4. Recall that we denote the local Wald estimand (4.1) with \(v=1\) in this setting by \(\tau_{S C R D}\). We also denote the analog estimator (4.5) with \(v=1\) in this setting by
+
+\[
+\hat{\tau}_{S C R D}\left(\theta^{\prime \prime}\right)=\hat{F}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)-\hat{F}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{-}\right)=\hat{\mu}_{1,2}\left(0^{+}, \theta^{\prime \prime}\right)-\hat{\mu}_{1,2}\left(0^{-}, \theta^{\prime \prime}\right)
+\]
+
+For this application, we consider the following set of assumptions.\\
+Assumption SCRD.\\
+(i) \(\frac{\partial^{j}}{\partial x^{j}} F_{Y \mid X}\) is Lipschitz in \(x\) on \(\mathscr{Y} \times[\underline{x}, 0)\) and \(\mathscr{Y} \times(0, \bar{x}]\) for \(j=0,1,2,3\).\\
+(ii) \(h_{n}\) satisfies \(h_{n} \rightarrow 0, n h_{n}^{7} \rightarrow 0\), and \(n h_{n}^{2} \rightarrow \infty\).
+
+Let the EMP be given by
+
+\[
+\hat{\nu}_{\xi, n}^{ \pm}\left(\theta^{\prime \prime}\right)=\sum_{i=1}^{n} \xi_{i} \frac{e_{0}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[\mathbb{1}\left\{Y_{i} \leq \theta^{\prime \prime}\right\}-\tilde{F}_{Y \mid X}\left(\theta^{\prime \prime} \mid X_{i}\right)\right] r_{2}\left(\frac{X_{i}}{h_{n}}\right) K\left(\frac{X_{i}}{h_{n}}\right) \delta_{i}^{ \pm}}{\sqrt{n h_{n}} \hat{f}_{X}(0)},
+\]
+
+where \(\tilde{F}_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right)=\tilde{\mu}_{1,2}\left(x, \theta^{\prime \prime}\right) \mathbb{1}\left\{\left|x / h_{n}\right| \in[-1,1]\right\}\), and \(\tilde{\mu}_{1,2}\) is defined in the statement of Lemma 7 . Our general result applied to the current case yields the following corollary. A proof is provided in Section E.2.4.
+
+Corollary 6 (Example: CDF Discontinuity). Suppose that Assumptions S, K, M, and SCRD hold.\\
+(i) There exists a zero mean Gaussian process \(\mathbb{G}_{S C R D}^{\prime}: \Omega^{x} \mapsto \ell^{\infty}(\mathscr{Y})\) such that
+
+\[
+\sqrt{n h_{n}}\left[\hat{\tau}_{S C R D}-\tau_{S C R D}\right] \rightsquigarrow \mathbb{G}_{S C R D}^{\prime} .
+\]
+
+(ii) Furthermore, with probability approaching one,
+
+\[
+\hat{\nu}_{\xi, n}^{+}-\hat{\nu}_{\xi, n}^{-} \underset{\xi}{\underset{\xi}{p}} \mathbb{G}_{S C R D}^{\prime} .
+\]
+
+One of the most common applications of weak convergence results for CDFs as stated in this corollary is the test of the stochastic dominance:
+
+\[
+H_{0}: \tau_{S C R D}\left(\theta^{\prime \prime}\right) \leq 0 \quad \forall \theta^{\prime \prime} \in \Theta^{\prime \prime} .
+\]
+
+See McFadden (1989). To test this hypothesis, we can use \(\sup _{\theta^{\prime \prime} \in \Theta^{\prime \prime}} \sqrt{n h_{n}} \max \left\{\hat{\tau}_{S C R D}\left(\theta^{\prime \prime}\right), 0\right\}\) as the test statistic, and use \(\sup _{\theta^{\prime \prime} \in \Theta^{\prime \prime}} \sqrt{n h_{n}} \max \left\{\hat{\nu}_{\xi, n}^{+}\left(\theta^{\prime \prime}\right)-\hat{\nu}_{\xi, n}^{-}\left(\theta^{\prime \prime}\right), 0\right\}\) to simulate its asymptotic distribution.
+
+\section*{Supplementary Material}
+\section*{C. 6 Example: Sharp Quantile RDD}
+Consider \(\Theta_{1}, \Theta_{2}, \Theta_{1}^{\prime}, \Theta_{2}^{\prime}, \Theta^{\prime \prime}, g_{1}, g_{2}, \phi, \psi\), and \(\Upsilon\) defined in Section B.5. Recall that we denote the local Wald estimand (4.1) with \(v=1\) in this setting by \(\tau_{S Q R D}\). We also denote the analog estimator (4.5) with \(v=1\) in this setting by
+
+\[
+\hat{\tau}_{S Q R D}\left(\theta^{\prime \prime}\right)=\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)-\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{-}\right)=\phi\left(\hat{\mu}_{1, p}\left(0^{+}, \cdot\right)\right)\left(\theta^{\prime \prime}\right)-\phi\left(\hat{\mu}_{1, p}\left(0^{-}, \cdot\right)\right)\left(\theta^{\prime \prime}\right)
+\]
+
+for \(\theta^{\prime \prime} \in[a, 1-a] \subset(0,1)\). For this application, we consider the following set of assumptions.
+
+\section*{Assumption SQRD.}
+(i) (a) \(\frac{\partial^{j}}{\partial x^{j}} F_{Y \mid X}\) is Lipschitz in \(x\) on \(\mathscr{Y}_{1} \times[\underline{x}, 0)\) and \(\mathscr{Y}_{1} \times(0, \bar{x}]\) for \(j=0,1,2,3\). (b) \(f_{Y \mid X}(y \mid x)\) is Lipschitz in \(x\) and \(0<C<f_{Y \mid X}<C^{\prime}<\infty\) on \(\mathscr{Y}_{1} \times[\underline{x}, 0)\) and \(\mathscr{Y}_{1} \times(0, \bar{x}]\).\\
+(ii) \(h_{n}\) satisfies \(h_{n} \rightarrow 0, n h_{n}^{7} \rightarrow 0\), and \(n h_{n}^{2} \rightarrow \infty\).\\
+(iii) There exists \(\hat{f}_{Y \mid X}\left(y \mid 0^{ \pm}\right)\)such that \(\sup _{y \in \mathscr{Y}_{1}}\left|\hat{f}_{Y \mid X}\left(y \mid 0^{ \pm}\right)-f_{Y \mid X}\left(y \mid 0^{ \pm}\right)\right|=o_{p}^{x}(1)\).
+
+We state (iii) as a high level assumption to accommodate a number of alternative estimators. An example and sufficient conditions for (iii) is given above Lemma 12 in section E.1.2 in the Mathematical Appendix.
+
+Define
+
+\[
+\begin{aligned}
+& \widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{ \pm}\right)\left(\theta^{\prime \prime}\right)=-\frac{\hat{\nu}_{\xi, n}^{ \pm}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right)\right)}{\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right) \mid 0^{ \pm}\right)} \\
+& \quad=-\sum_{i=1}^{n} \xi_{i} \frac{e_{0}^{\prime}\left(\Gamma_{2}^{+}\right)^{-1}\left[\mathbb{1}\left\{Y_{i} \leq \hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right)\right\}-\tilde{F}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right) \mid X_{i}\right)\right] r_{2}\left(\frac{X_{i}}{h_{n}}\right) K\left(\frac{X_{i}}{h_{n}}\right) \delta_{i}^{ \pm}}{\sqrt{n h_{n}} \hat{f}_{X}(0) \hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right) \mid 0^{ \pm}\right)}
+\end{aligned}
+\]
+
+where \(\tilde{F}_{Y \mid X}(y \mid x)=\tilde{\mu}_{1,2}(x, y) \mathbb{1}\left\{\left|x / h_{n}\right| \leq 1\right\}\), and \(\tilde{\mu}_{1,2}\) is defined in the statement of Lemma 7. Our general result applied to the current case yields the following corollary.
+
+Corollary 7 (Example: Sharp Quantile RDD). Suppose that Assumptions S, K, M, and SQRD hold.\\
+(i) There exists a zero mean Gaussian process \(\mathbb{G}_{S Q R D}^{\prime}: \Omega^{x} \mapsto \ell^{\infty}([a, 1-a])\) such that
+
+\[
+\sqrt{n h_{n}}\left[\hat{\tau}_{S Q R D}-\tau_{S Q R D}\right] \rightsquigarrow \mathbb{G}_{S Q R D}^{\prime} .
+\]
+
+(ii) Furthermore, with probability approaching one,
+
+\[
+\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)-\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right) \underset{\xi}{\underset{\xi}{p}} \mathbb{G}_{S Q R D}^{\prime} .
+\]
+
+A proof is provided in Section E.2.5. One of the practically most relevant applications of this corollary is the test of the null hypothesis of uniform treatment nullity:
+
+\[
+H_{0}: \tau_{S Q R D}\left(\theta^{\prime \prime}\right)=0 \quad \text { for all } \theta^{\prime \prime} \in \Theta^{\prime \prime}=[a, 1-a] .
+\]
+
+See Koenker and Xiao (2002), Chernozhukov and Fernández-Val (2005), and Qu and Yoon (2015b). To test this hypothesis, we can use \(\sup _{\theta^{\prime \prime} \in[a, 1-a]} \sqrt{n h_{n}}\left|\hat{\tau}_{S Q R D}\left(\theta^{\prime \prime}\right)\right|\) as the test statistic, and use
+
+\[
+\sup _{\theta^{\prime \prime} \in[a, 1-a]}\left|\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)\left(\theta^{\prime \prime}\right)-\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}\left(\hat{\nu}_{\xi, n}^{-}\right)\left(\theta^{\prime \prime}\right)\right|
+\]
+
+to simulate its asymptotic distribution.\\
+Another one of the practically most relevant applications of the above corollary is the test of the null hypothesis of treatment homogeneity across quantiles:
+
+\[
+H_{0}: \tau_{S Q R D}\left(\theta^{\prime \prime}\right)=\tau_{S Q R D}\left(\theta^{\prime \prime \prime}\right) \quad \text { for all } \theta^{\prime \prime}, \theta^{\prime \prime \prime} \in \Theta^{\prime \prime}=[a, 1-a] .
+\]
+
+\section*{Supplementary Material}
+We again refer to the list of references in the previous paragraph. To test this hypothesis, we can use \(\sup _{\theta^{\prime \prime} \in[a, 1-a]} \sqrt{n h_{n}}\left|\hat{\tau}_{S Q R D}\left(\theta^{\prime \prime}\right)-(1-2 a)^{-1} \int_{[a, 1-a]} \hat{\tau}_{S Q R D}\left(\theta^{\prime \prime \prime}\right) d \theta^{\prime \prime \prime}\right|\) as the test statistic, and use
+
+\[
+\begin{aligned}
+\sup _{\theta^{\prime \prime} \in[a, 1-a]} & \mid \widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}\left(\hat{\nu}_{\xi, n}^{+}\right)\left(\theta^{\prime \prime}\right)-\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}\left(\hat{\nu}_{\xi, n}^{-}\right)\left(\theta^{\prime \prime}\right) \\
+& \left.-\frac{1}{1-2 a} \int_{[a, 1-a]}\left(\widehat{\phi}_{F_{Y \mid X}^{\prime}\left(\cdot \mid 0^{+}\right)}\left(\hat{\nu}_{\xi, n}^{+}\right)\left(\theta^{\prime \prime \prime}\right)-\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right)\left(\theta^{\prime \prime \prime}\right)\right) d \theta^{\prime \prime \prime} \right\rvert\,
+\end{aligned}
+\]
+
+to simulate its asymptotic distribution.\\
+Remark 1. It may happen that \(\hat{F}_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)\)is not monotone increasing in finite sample. We may monotonize the estimated CDFs by re-arrangements following Chernozhukov, Fernandez-Val, Galichon (2010). This does not affect the asymptotic properties of the estimators, while allowing for inversion of the CDF estimators.
+
+\section*{C. 7 Example: Fuzzy Quantile RKD}
+Consider \(\Theta_{1}, \Theta_{2}, \Theta_{1}^{\prime}, \Theta_{2}^{\prime}, \Theta^{\prime \prime}, g_{1}, g_{2}, \phi, \psi\), and \(\Upsilon\) defined in Section B.6. Recall that we denote the local Wald estimand (4.1) with \(v=1\) in this setting by \(\tau_{F Q R K}\). We also denote the analog estimator (4.5) with \(v=1\) in this setting by
+
+\[
+\hat{\tau}_{F Q R K}\left(\theta^{\prime \prime}\right)=\frac{\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{+}\right)\right)\left(\theta^{\prime \prime}\right)-\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{-}\right)\right)\left(\theta^{\prime \prime}\right)}{\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)},
+\]
+
+where \(\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{ \pm}\right)\right)\left(\theta^{\prime \prime}\right):=F_{Y \mid X}^{(1)}\left(\hat{Q}_{Y \mid X}(\cdot \mid 0) \mid 0^{ \pm}\right) / \hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}(\cdot \mid 0) \mid 0\right)\). We further define
+
+\[
+\begin{aligned}
+& \widehat{\phi}_{F_{Y \mid X}^{(1)}\left(\cdot \mid 0^{ \pm}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{ \pm}(\cdot, 1) / \sqrt{c_{1}^{3}}\right)(\cdot) \\
+& \quad=-\sum_{i=1}^{n} \xi_{i} \frac{e_{1}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[\mathbb{1}\left\{Y_{i} \leq \hat{Q}_{Y \mid X}(\cdot \mid 0)\right\}-\tilde{F}_{Y \mid X}\left(\hat{Q}_{Y \mid X}(\cdot \mid 0) \mid X_{i}\right)\right] r_{2}\left(\frac{X_{i}}{h_{1, n}}\right) K\left(\frac{X_{i}}{h_{1, n}}\right) \delta_{i}^{ \pm}}{\sqrt{c_{1}^{3} n h_{1, n}} \hat{f}_{X}(0) \hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}(\cdot \mid 0) \mid 0\right)}, \\
+& \widehat{\psi}_{\mu_{2}^{(1)}\left(0^{ \pm}, 0\right)}^{\prime}\left((\cdot, 2) / \sqrt{c_{2}^{3}}\right)(\cdot)=\sum_{i=1}^{n} \xi_{i} \frac{e_{1}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[D_{i}-\tilde{\mu}_{2}\left(X_{i}, 0\right)\right] r_{2}\left(\frac{X_{i}}{h_{2, n}}\right) K\left(\frac{X_{i}}{h_{2, n}}\right) \delta_{i}^{ \pm}}{\sqrt{c_{2}^{3} n h_{2, n}} \hat{f}_{X}(0)}, \\
+& \widehat{\mathbb{X}}_{n}^{\prime}(\cdot, 1)=\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}(\cdot, 1) / \sqrt{c_{1}^{3}}\right)(\cdot)-\widehat{\phi}_{F_{Y \mid X}^{\prime}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}(\cdot, 1) / \sqrt{c_{1}^{3}}\right)(\cdot), \quad \text { and } \\
+& \widehat{\mathbb{X}}_{n}^{\prime}(\cdot, 2)=\widehat{\psi}_{\mu_{2}^{(1)}\left(0^{+}, 0\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}(\cdot, 2) / \sqrt{c_{2}^{3}}\right)(\cdot)-\widehat{\psi}_{\mu_{2}^{(1)}\left(0^{-}, 0\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}(\cdot, 2) / \sqrt{c_{2}^{3}}\right)(\cdot),
+\end{aligned}
+\]
+
+where \(\tilde{F}_{Y \mid X}(y \mid x)=\tilde{\mu}_{1,2}(x, y) \mathbb{1}\left\{\left|x / h_{1, n}\right| \leq 1\right\}\). For this application, we consider the following set of assumptions.
+
+\section*{Assumption FQRK.}
+(i)(a) \(\frac{\partial^{j}}{\partial x^{j}} F_{Y \mid X}\) is Lipschitz on \(\mathscr{Y}_{1} \times[\underline{x}, 0)\) and \(\mathscr{Y}_{1} \times(0, \bar{x}]\) in \(x\) for \(j=0,1,2,3 . \quad \frac{\partial^{j}}{\partial x^{j}} E[D \mid X=\cdot]\) is Lipschitz continuous on \([\underline{x}, 0\) ) and ( \(0, \bar{x}]\) in \(x\) for \(j=0,1,2,3\). (b) \(f_{Y \mid X}\) is Lipschitz in \(x\) and \(0<C<f_{Y \mid X}(y \mid x)<C^{\prime}<\infty\) on \(\mathscr{Y}_{1} \times([\underline{x}, \bar{x}] \backslash\{0\})\).\\
+(ii) The baseline bandwidth \(h_{n}\) satisfies \(h_{n} \rightarrow 0, n h_{n}^{7} \rightarrow 0\), and \(n h_{n}^{3} \rightarrow \infty\), and there exist constants \(c_{1}, c_{2} \in(0, \infty)\) such that \(h_{k, n}=c_{k} h_{n}\).\\
+(iii) \(E\left[D \mid X=0^{+}\right] \neq E\left[D \mid X=0^{-}\right]\).\\
+(iv) \(\sup _{y \in \mathscr{Y}_{1}}\left|\sqrt{n h_{n}^{3}}\left[\hat{f}_{Y \mid X}(y \mid 0)-f_{Y \mid X}(y \mid 0)\right]\right| \underset{x}{p} 0\)
+
+\section*{Supplementary Material}
+Our general result applied to the current case yields the following corollary.\\
+Corollary 8 (Example: Fuzzy Quantile RKD). Suppose that Assumptions S, K, M, and FQRK hold. (i) There exists a zero mean Gaussian process \(\mathbb{G}_{F Q R K}^{\prime}: \Omega^{x} \mapsto \ell^{\infty}([a, 1-a])\) such that
+
+\[
+\sqrt{n h_{n}^{3}}\left[\hat{\tau}_{F Q R K}-\tau_{F Q R K}\right] \rightsquigarrow \mathbb{G}_{F Q R K}^{\prime}
+\]
+
+(ii) Furthermore, with probability approaching one,
+
+\[
+\frac{\left[\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right] \widehat{\mathbb{X}}_{n}^{\prime}(\cdot, 1)-\left[\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{+}\right)\right)(\cdot)-\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{-}\right)\right)(\cdot)\right] \widehat{\mathbb{X}}_{n}^{\prime}(\cdot, 2)}{\left[\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right]^{2}} \underset{\xi}{p} \mathbb{G}_{F Q R K}^{\prime}(\cdot)
+\]
+
+This corollary can be proved similarly to Corollary 9 . One of the practically most relevant applications of this corollary is the test of the null hypothesis of uniform treatment nullity:
+
+\[
+H_{0}: \tau_{F Q R K}\left(\theta^{\prime \prime}\right)=0 \quad \text { for all } \theta^{\prime \prime} \in \Theta^{\prime \prime}=[a, 1-a] .
+\]
+
+To test this hypothesis, we can use \(\sup _{\theta^{\prime \prime} \in[a, 1-a]} \sqrt{n h_{n}^{3}}\left|\hat{\tau}_{F Q R K}\left(\theta^{\prime \prime}\right)\right|\) as the test statistic, and use
+
+\[
+\sup _{\theta^{\prime \prime} \in[a, 1-a]}\left|\frac{\left[\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right] \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime}, 1\right)-\left[\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{+}\right)\right)(\cdot)-\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{-}\right)\right)(\cdot)\right] \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime}, 2\right)}{\left[\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right]^{2}}\right|
+\]
+
+to simulate its asymptotic distribution.\\
+Another one of the practically most relevant applications of the above corollary is the test of the null hypothesis of treatment homogeneity across quantiles:
+
+\[
+H_{0}: \tau_{S Q R K}\left(\theta^{\prime \prime}\right)=\tau_{S Q R K}\left(\theta^{\prime \prime \prime}\right) \quad \text { for all } \theta^{\prime \prime}, \theta^{\prime \prime \prime} \in \Theta^{\prime \prime}=[a, 1-a] .
+\]
+
+To test this hypothesis, we can use \(\sup _{\theta^{\prime \prime} \in[a, 1-a]} \sqrt{n h_{n}^{3}}\left|\hat{\tau}_{S Q R K}\left(\theta^{\prime \prime}\right)-(1-2 a)^{-1} \int_{[a, 1-a]} \hat{\tau}_{S Q R K}\left(\theta^{\prime \prime \prime}\right) d \theta^{\prime \prime \prime}\right|\) as the test statistic, and use
+
+\[
+\begin{aligned}
+& \sup _{\theta^{\prime \prime} \in[a, 1-a]} \left\lvert\, \frac{\left[\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right] \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime}, 1\right)-\left[\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{+}\right)\right)(\cdot)-\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{-}\right)\right)(\cdot)\right] \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime}, 2\right)}{\left[\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right]^{2}}\right. \\
+& \left.-\frac{1}{1-2 a} \int_{[a, 1-a]} \frac{\left[\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right] \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime \prime}, 1\right)-\left[\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{+}\right)\right)(\cdot)-\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{-}\right)\right)(\cdot)\right] \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime \prime}, 2\right)}{\left[\hat{\mu}_{2,2}^{(1)}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}^{(1)}\left(0^{-}, 0\right)\right]^{2}} d \theta^{\prime \prime \prime} \right\rvert\,
+\end{aligned}
+\]
+
+to simulate its asymptotic distribution.
+
+\section*{C. 8 Example: Sharp Quantile RKD}
+Consider \(\Theta_{1}, \Theta_{2}, \Theta_{1}^{\prime}, \Theta_{2}^{\prime}, \Theta^{\prime \prime}, g_{1}, g_{2}, \phi, \psi\), and \(\Upsilon\) defined in Section B.7. Recall that the operator \(\phi\) is defined by
+
+\[
+\phi\left(F_{Y \mid X}^{(1)}(\cdot \mid x)\right)\left(\theta^{\prime \prime}\right)=-\frac{F_{Y \mid X}^{(1)}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right) \mid x\right)}{f_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right) \mid x\right)}
+\]
+
+where \(F_{Y \mid X}^{(1)}(y \mid x)=\frac{\partial}{\partial x} F(y \mid x)\) and \(Q_{Y \mid X}\left(\theta^{\prime} \mid x\right)=\inf \left\{\theta \in \Theta_{1}: F_{Y \mid X}(\theta \mid x) \geq \theta^{\prime}\right\}\). Also recall that the local Wald estimand (4.1) with \(v=1\) in this setting is denoted by \(\tau_{S Q R K}\). We denote the analog 'intermediate' estimator (4.5) with \(v=1\) in this setting by
+
+\[
+\tilde{\tau}_{S Q R K}\left(\theta^{\prime \prime}\right)=\frac{\phi\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{+}\right)\right)\left(\theta^{\prime \prime}\right)-\phi\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{-}\right)\right)\left(\theta^{\prime \prime}\right)}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)}
+\]
+
+\section*{Supplementary Material}
+for \(\theta^{\prime \prime} \in[a, 1-a] \subset(0,1)\). Note that \(\hat{F}_{Y \mid X}^{(1)}\) denotes for the slope estimate from a local polynomial CDF estimation. This is intermediate because the operator \(\phi\) contains unknowns, \(f_{Y \mid X}(\cdot \mid x)\) and \(Q_{Y \mid X}(\cdot \mid x)\). In practice, we need to also estimate this operator \(\phi\) by replacing these unknowns by uniformly consistent estimators. Thus, a feasible analog estimator is denoted by
+
+\[
+\hat{\tau}_{S Q R K}\left(\theta^{\prime \prime}\right):=\frac{\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{+}\right)\right)\left(\theta^{\prime \prime}\right)-\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{-}\right)\right)\left(\theta^{\prime \prime}\right)}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)}
+\]
+
+where
+
+\[
+\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{ \pm}\right)\right)\left(\theta^{\prime \prime}\right)=-\frac{\hat{F}_{Y \mid X}^{(1)}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)}{\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)}
+\]
+
+for \(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right)=\inf \left\{\theta \in \Theta_{1}: \hat{F}_{Y \mid x}(\theta \mid x) \geq \theta^{\prime \prime}\right\}\) and \(\widehat{\phi}\left(F_{Y \mid X}^{(1)}(\cdot \mid x)\right)\left(\theta^{\prime \prime}\right):=-\frac{F_{Y \mid X}^{(1)}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right) \mid x\right)}{\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right) \mid x\right)}\). For this application, we consider the following set of assumptions.
+
+\section*{Assumption SQRK.}
+(i) (a) \(\frac{\partial^{j}}{\partial x^{j}} F_{Y \mid X}\) is Lipschitz in \(x\) on \(\mathscr{Y}_{1} \times[\underline{x}, 0)\) and \(\mathscr{Y}_{1} \times(0, \bar{x}]\) for \(j=0,1,2,3\). (b) \(f_{Y \mid X}\) is Lipschitz in \(x\) and \(0<C<f_{Y \mid X}(y \mid x)<C^{\prime}<\infty\) on \(\mathscr{Y}_{1} \times[\underline{x}, \bar{x}]\).\\
+(ii) \(h_{n}\) satisfies \(h_{n} \rightarrow 0, n h_{n}^{7} \rightarrow 0\), and \(n h_{n}^{3} \rightarrow \infty\).\\
+(iii) \(b^{(1)}\) is continuous on \([\underline{x}, \bar{x}] \backslash\{0\}\) and \(\lim _{x \downarrow 0} b^{(1)}(x) \neq \lim _{x \uparrow 0} b^{(1)}(x)\).\\
+(iv) \(\sup _{y \in \mathscr{Y}_{1}}\left|\sqrt{n h_{n}^{3}}\left[\hat{f}_{Y \mid X}(y \mid 0)-f_{Y \mid X}(y \mid 0)\right]\right| \underset{x}{\xrightarrow{p}} 0\)
+
+We state part (iv) of this assumption at this high-level in order to accommodate a number of alternative estimators. Above Lemma 13 in Section E.1.2, we propose one particular such estimator which satisfies (iv).
+
+We defined the operator \(\phi\) for \(\tau_{S Q R K}\) with \(\phi\) in (C.1) without a formal justification. Now that Assumption SQRK is stated, we can now provide the following lemma for a justification.
+
+Lemma 8. Suppose that Assumptions \(S\) and \(S Q R K\) (i) hold. Then, we have
+
+\[
+\frac{\partial}{\partial x} Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right)=-\frac{F_{Y \mid X}^{(1)}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)}{f_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)}=\phi\left(F_{Y \mid X}^{(1)}\left(\cdot \mid 0^{ \pm}\right)\right) .
+\]
+
+To state the result of this subsection, define the following objects.
+
+\[
+\begin{aligned}
+& \phi_{F_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{ \pm}\right)\left(\theta^{\prime \prime}\right)=-\frac{\hat{\nu}_{\xi, n}^{ \pm}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right)}{f_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)} \\
+& \quad=-\sum_{i=1}^{n} \xi_{i} \frac{e_{1}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[\mathbb{1}\left\{Y_{i} \leq Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right\}-\tilde{F}_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid X_{i}\right)\right] r_{2}\left(\frac{X_{i}}{h_{n}}\right) K\left(\frac{X_{i}}{h_{n}}\right) \delta_{i}^{ \pm}}{\sqrt{n h_{n}} \hat{f}_{X}(0) f_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)} \\
+& \widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{ \pm}\right)\left(\theta^{\prime \prime}\right)=-\frac{\hat{\nu}_{\xi, n}^{ \pm}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right)}{\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)} \\
+& \quad=-\sum_{i=1}^{n} \xi_{i} \frac{e_{1}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[\mathbb{1}\left\{Y_{i} \leq \hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right\}-\tilde{F}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid X_{i}\right)\right] r_{2}\left(\frac{X_{i}}{h_{n}}\right) K\left(\frac{X_{i}}{h_{n}}\right) \delta_{i}^{ \pm}}{\sqrt{n h_{n}} \hat{f}_{X}(0) \hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)}
+\end{aligned}
+\]
+
+where \(\tilde{F}(y \mid x)=\tilde{\mu}_{1,2}(x, y) \mathbb{1}\left\{\left|x / h_{n}\right| \leq 1\right\}\) with \(\tilde{\mu}_{1,2}\) defined in the statement of Lemma 7 . Our general result applied to the current case yields the following corollary.
+
+Corollary 9 (Example: Sharp Quantile RKD). Suppose that Assumptions S, K, M, and SQRK hold. (i) There exists a zero mean Gaussian process \(\mathbb{G}_{S Q R K}^{\prime}: \Omega^{x} \mapsto \ell^{\infty}([a, 1-a])\) such that
+
+\[
+\sqrt{n h_{n}^{3}}\left[\tilde{\tau}_{S Q R K}-\tau_{S Q R K}\right] \rightsquigarrow \mathbb{G}_{S Q R K}^{\prime},
+\]
+
+and thus
+
+\[
+\sqrt{n h_{n}^{3}}\left[\hat{\tau}_{S Q R K}-\tau_{S Q R K}\right] \rightsquigarrow \mathbb{G}_{S Q R K}^{\prime} .
+\]
+
+(ii) Furthermore, with probability approaching one,
+
+\[
+\frac{\phi_{F_{Y \mid X}\left(\cdot \mid 0^{+}+\right.}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)-\phi_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right)}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)} \underset{\xi}{p} \mathbb{G}_{S Q R K}^{\prime},
+\]
+
+and thus
+
+\[
+\frac{\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}+\right.}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)-\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right)}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)} \underset{\xi}{\underset{\sim}{p}} \mathbb{G}_{S Q R K}^{\prime} .
+\]
+
+A proof is provided in Section E.2.6. One of the practically most relevant applications of this corollary is the test of the null hypothesis of uniform treatment nullity:
+
+\[
+H_{0}: \tau_{S Q R K}\left(\theta^{\prime \prime}\right)=0 \quad \text { for all } \theta^{\prime \prime} \in \Theta^{\prime \prime}=[a, 1-a]
+\]
+
+To test this hypothesis, we can use \(\sup _{\theta^{\prime \prime} \in[a, 1-a]} \sqrt{n h_{n}^{3}}\left|\hat{\tau}_{S Q R K}\left(\theta^{\prime \prime}\right)\right|\) as the test statistic, and use
+
+\[
+\sup _{\theta^{\prime \prime} \in[a, 1-a]}\left|\frac{\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)\left(\theta^{\prime \prime}\right)-\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right)\left(\theta^{\prime \prime}\right)}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)}\right|
+\]
+
+to simulate its asymptotic distribution.\\
+Another one of the practically most relevant applications of the above corollary is the test of the null hypothesis of treatment homogeneity across quantiles:
+
+\[
+H_{0}: \tau_{S Q R K}\left(\theta^{\prime \prime}\right)=\tau_{S Q R K}\left(\theta^{\prime \prime \prime}\right) \quad \text { for all } \theta^{\prime \prime}, \theta^{\prime \prime \prime} \in \Theta^{\prime \prime}=[a, 1-a] .
+\]
+
+To test this hypothesis, we can use \(\sup _{\theta^{\prime \prime} \in[a, 1-a]} \sqrt{n h_{n}^{3}}\left|\hat{\tau}_{S Q R K}\left(\theta^{\prime \prime}\right)-(1-2 a)^{-1} \int_{[a, 1-a]} \hat{\tau}_{S Q R K}\left(\theta^{\prime \prime \prime}\right) d \theta^{\prime \prime \prime}\right|\) as the test statistic, and use
+
+\[
+\begin{aligned}
+\sup _{\theta^{\prime \prime} \in[a, 1-a]} & \left\lvert\, \frac{\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)\left(\theta^{\prime \prime}\right)-\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right)\left(\theta^{\prime \prime}\right)}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)}\right. \\
+& \left.-\frac{1}{1-2 a} \int_{[a, 1-a]} \frac{\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)\left(\theta^{\prime \prime \prime}\right)-\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right)\left(\theta^{\prime \prime \prime}\right)}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)} d \theta^{\prime \prime \prime \prime} \right\rvert\,
+\end{aligned}
+\]
+
+to simulate its asymptotic distribution.
+
+\section*{C. 9 Example: Group Covariate and Test of Heterogeneous Treatment Effects}
+Consider \(\Theta_{1}, \Theta_{2}, \Theta_{1}^{\prime}, \Theta_{2}^{\prime}, \Theta^{\prime \prime}, g_{1}, g_{2}, \phi, \psi\), and \(\Upsilon\) defined in Section B.8. Recall that we denote the local Wald estimand (4.1) with \(v=1\) in this setting by \(\tau_{G F M R D}\). We also denote the analog estimator (4.5) with \(v=1\) in this setting by \(\hat{\tau}_{G F M R D}\).
+
+\[
+\hat{\tau}_{G F M R D}\left(\theta^{\prime \prime}\right)=\frac{\hat{\mu}_{1,2}\left(0^{+}, \theta^{\prime \prime}\right)-\hat{\mu}_{1,2}\left(0^{-}, \theta^{\prime \prime}\right)}{\hat{\mu}_{2,2}\left(0^{+}, \theta^{\prime \prime}\right)-\hat{\mu}_{2,2}\left(0^{-}, \theta^{\prime \prime}\right)}
+\]
+
+For this application, we consider the following set of assumptions.
+
+\section*{Supplementary Material}
+\section*{Assumption GFMRD.}
+(i) (a) \(E\left[|Y|^{* 2+\epsilon} \cdot \mathbb{1}\left\{G=\theta^{\prime \prime}\right\} \mid X=\cdot\right]<\infty\) on \([\underline{x}, \bar{x}] \backslash\{0\}\) for some \(\epsilon>0\) for \(\theta^{\prime \prime} \in\{1, \ldots, K\}\). (b) \(\frac{\partial^{j}}{\partial x^{j}} E\left[Y^{*} \cdot \mathbb{1}\left\{G=\theta^{\prime \prime}\right\} \mid X=\cdot\right]<C\) and \(\frac{\partial^{j}}{\partial x^{j}} E\left[D^{*} \cdot \mathbb{1}\left\{G=\theta^{\prime \prime}\right\} \mid X=\cdot\right]\) are Lipschitz on \([\underline{x}, 0)\) and \((0, \bar{x}]\) for \(j=0,1,2,3\). (c) \(E\left[D^{*} \cdot \mathbb{1}\left\{G=\theta^{\prime \prime}\right\} \mid X=0^{+}\right] \neq E\left[D^{*} \cdot \mathbb{1}\left\{G=\theta^{\prime \prime}\right\} \mid X=0^{-}\right]\)for \(\theta^{\prime \prime} \in\{1, \ldots, K\}\). (d) \(E\left[\mathbb{1}\left\{G=\theta^{\prime \prime}\right\} \mid X=\cdot\right]>0\) for all \(\theta^{\prime \prime} \in \Theta^{\prime \prime}\)\\
+(ii) The baseline bandwidth \(h_{n}\) satisfies \(h_{n} \rightarrow 0, n h_{n}^{2} \rightarrow \infty, n h_{n}^{7} \rightarrow 0\). There exist functions \(c_{1}\), \(c_{2}:\{1, \ldots, K\} \rightarrow[\underline{c}, \bar{c}] \subset(0, \infty)\) such that \(h_{1, n}\left(\theta^{\prime \prime}{ }_{1}\right)=c_{1}\left(\theta^{\prime \prime}{ }_{1}\right) h_{n}\) and \(h_{2, n}\left(\theta^{\prime \prime}{ }_{2}\right)=c_{2}\left(\theta^{\prime \prime}{ }_{2}\right) h_{n}\).\\
+(iii) \(V\left(Y^{*} \cdot \mathbb{1}\left\{G=\theta^{\prime \prime}\right\} \mid X=x\right), V\left(D^{*} \cdot \mathbb{1}\left\{G=\theta^{\prime \prime}\right\} \mid X=x\right) \in \mathcal{C}^{1}([\underline{x}, \bar{x}] \backslash\{0\})\) and \(0<V\left(Y^{*} \cdot \mathbb{1}\{G=\right.\) \(\left.\left.\theta^{\prime \prime}\right\} \mid X=0^{ \pm}\right)\)with derivatives in \(x\) all bounded on \([\underline{x}, \bar{x}] \backslash\{0\}\). Furthermore, \(0<V\left(D^{*} \cdot \mathbb{1}\left\{G=\theta^{\prime \prime}\right\} \mid X=\right.\) \(0^{ \pm}\)) for \(\theta^{\prime \prime} \in\{1, \ldots, K\}\).
+
+For \(k \in\{1,2\}\) and \(\theta^{\prime \prime} \in\{1, \ldots, K\}\), define
+
+\[
+\widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime}, k\right)=\frac{1}{\sqrt{c_{k}}}\left[\hat{\nu}_{\xi, n}^{+}\left(\theta^{\prime \prime}, k\right)-\hat{\nu}_{\xi, n}^{-}\left(\theta^{\prime \prime}, k\right)\right],
+\]
+
+where the EMP is given by
+
+\[
+\begin{aligned}
+\hat{\nu}_{\xi, n}^{ \pm}\left(\theta_{1}^{\prime \prime}, 1\right) & =\sum_{i=1}^{n} \xi_{i} \frac{e_{0}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[Y_{i}-\tilde{\mu}_{1,2}\left(X_{i}, \theta_{1}^{\prime \prime}\right)\right] r_{2}\left(\frac{X_{i}}{h_{1, n}\left(\theta_{1}^{\prime \prime}\right)}\right) K\left(\frac{X_{i}}{h_{1, n}\left(\theta_{1}^{\prime \prime}\right)}\right)}{\sqrt{n h_{1, n}\left(\theta_{1}^{\prime \prime}\right)} \hat{f}_{X}(0)} \\
+\hat{\nu}_{\xi, n}^{ \pm}\left(\theta_{2}^{\prime \prime}, 2\right) & =\sum_{i=1}^{n} \xi_{i} \frac{e_{0}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1}\left[D_{i}-\tilde{\mu}_{2,2}\left(X_{i}, \theta_{2}^{\prime \prime}\right)\right] r_{2}\left(\frac{X_{i}}{h_{2, n}\left(\theta_{2}^{\prime \prime}\right)}\right) K\left(\frac{X_{i}}{h_{2, n}\left(\theta_{2}^{\prime \prime}\right)}\right)}{\sqrt{n h_{2, n}\left(\theta_{2}^{\prime \prime}\right)} \hat{f}_{X}(0)}
+\end{aligned}
+\]
+
+and \(\tilde{\mu}_{k, 2}\left(0^{ \pm}, \theta_{k}^{\prime \prime}\right)\) are defined in Lemma 7. Our general result applied to the current case yields the following corollary.
+
+Corollary 10 (Example: Group Covariate). Suppose that Assumptions S, K, M, and GFMRD hold. (i) There exists a symmetric positive definite \(K-b y-K\) matrix \(\Sigma_{G F M R D}\) such that
+
+\[
+\sqrt{n h_{n}}\left[\hat{\tau}_{G F M R D}-\tau_{G F M R D}\right] \rightsquigarrow N\left(0, \Sigma_{G F M R D}\right)
+\]
+
+(ii) Furthermore, with probability approaching one,
+
+\[
+\frac{\left(\hat{\mu}_{2,2}\left(0^{+}, \cdot\right)-\hat{\mu}_{2,2}\left(0^{-}, \cdot\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(\cdot, 1)-\left(\hat{\mu}_{1,2}\left(0^{+}, \cdot\right)-\hat{\mu}_{1,2}\left(0^{-}, \cdot\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(\cdot, 2)}{\left(\hat{\mu}_{2,2}\left(0^{+}, \cdot\right)-\hat{\mu}_{2,2}\left(0^{-}, \cdot\right)\right)^{2}} \underset{\xi}{\underset{\sim}{p}} N\left(0, \Sigma_{G F M R D}\right) .
+\]
+
+A proof is provided in Section E.2.7. One of the practically most relevant applications of this corollary is the test of the null hypothesis of joint treatment nullity:
+
+\[
+H_{0}: \tau_{F M R D}\left(\theta^{\prime \prime}\right)=0 \quad \text { for all } \theta^{\prime \prime} \in\{1, \ldots, K\} .
+\]
+
+To test this hypothesis, we can use \(\max _{\theta^{\prime \prime} \in\{1, \ldots, K\}} \sqrt{n h_{n}}\left|\hat{\tau}_{G F M R D}\left(\theta^{\prime \prime}\right)\right|\) as the test statistic, and use
+
+\[
+\max _{\theta^{\prime \prime} \in\{1, \ldots, K\}}\left|\frac{\left(\hat{\mu}_{2,2}\left(0^{+}, \theta^{\prime \prime}\right)-\hat{\mu}_{2,2}\left(0^{-}, \theta^{\prime \prime}\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime}, 1\right)-\left(\hat{\mu}_{1,2}\left(0^{+}, \theta^{\prime \prime}\right)-\hat{\mu}_{1,2}\left(0^{-}, \theta^{\prime \prime}\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime}, 2\right)}{\left(\hat{\mu}_{2,2}\left(0^{+}, \theta^{\prime \prime}\right)-\hat{\mu}_{2,2}\left(0^{-}, \theta^{\prime \prime}\right)\right)^{2}}\right|
+\]
+
+to simulate its asymptotic distribution.\\
+Another one of the practically most relevant applications of the above corollary is the test of the null hypothesis of treatment homogeneity across the covariate-index groups:
+
+\[
+H_{0}: \tau_{F M R D}\left(\theta^{\prime \prime}\right)=\tau_{F M R D}\left(\theta^{\prime \prime \prime}\right) \quad \text { for all } \theta^{\prime \prime}, \theta^{\prime \prime \prime} \in\{1, \ldots, K\}
+\]
+
+To test this hypothesis, we can use \(\max _{\theta^{\prime \prime} \in\{1, \ldots, K\}} \sqrt{n h_{n}}\left|\hat{\tau}_{G F M R D}\left(\theta^{\prime \prime}\right)-K^{-1} \sum_{\theta^{\prime \prime \prime}=1}^{K} \hat{\tau}_{G F M R D}\left(\theta^{\prime \prime \prime}\right)\right|\) as the test statistic, and use
+
+\[
+\begin{aligned}
+\max _{\theta^{\prime \prime} \in\{1, \ldots, K\}} \mid & \frac{\left(\hat{\mu}_{2,2}\left(0^{+}, \theta^{\prime \prime}\right)-\hat{\mu}_{2,2}\left(0^{-}, \theta^{\prime \prime}\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime}, 1\right)-\left(\hat{\mu}_{1,2}\left(0^{+}, \theta^{\prime \prime}\right)-\hat{\mu}_{1,2}\left(0^{-}, \theta^{\prime \prime}\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime}, 2\right)}{\left(\hat{\mu}_{2,2}\left(0^{+}, \theta^{\prime \prime}\right)-\hat{\mu}_{2,2}\left(0^{-}, \theta^{\prime \prime}\right)\right)^{2}} \\
+& \left.-\frac{1}{K} \sum_{\theta^{\prime \prime \prime}=1}^{K} \frac{\left(\hat{\mu}_{2,2}\left(0^{+}, \theta^{\prime \prime \prime}\right)-\hat{\mu}_{2,2}\left(0^{-}, \theta^{\prime \prime \prime}\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime \prime}, 1\right)-\left(\hat{\mu}_{1,2}\left(0^{+}, \theta^{\prime \prime \prime}\right)-\hat{\mu}_{1,2}\left(0^{-}, \theta^{\prime \prime \prime}\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}\left(\theta^{\prime \prime \prime}, 2\right)}{\left(\hat{\mu}_{2,2}\left(0^{+}, \theta^{\prime \prime \prime}\right)-\hat{\mu}_{2,2}\left(0^{-}, \theta^{\prime \prime \prime}\right)\right)^{2}} \right\rvert\,
+\end{aligned}
+\]
+
+to simulate its asymptotic distribution.
+
+\section*{D Additional Simulation Studies}
+We conduct simulation studies to demonstrate the robustness and unified applicability of our general multiplier bootstrap method. Each of the ten examples covered in Example 1 as well as Sections B.1-B. 8 and Sections C.1-C. 9 are tested, except for the example of CDF discontinuity - this example is omitted because it is a less complicated form of the sharp Quantile RDD without CDF inversions. The concrete bootstrap procedures outlined in Section C are used in the respective subsections below. We follow the procedure outlined in Section F for choices of bandwidths in finite sample. The kernel function that we use is the Epanechnikov kernel. Other details are discussed in each example subsection below.
+
+\section*{D. 1 Example: Fuzzy Mean RDD}
+Consider the case of fuzzy RDD presented in Example 1 and Section C.1. We generate an i.i.d. sample \(\left\{\left(Y_{i}, D_{i}, X_{i}\right)\right\}_{i=1}^{n}\) through the following data generating process:
+
+\[
+\begin{aligned}
+& Y_{i}=\alpha_{0}+\alpha_{1} X_{i}+\alpha_{2} X_{i}^{2}+\beta_{1} D_{i}+U_{i} \\
+& D_{i}=\mathbb{1}\left\{2 \cdot \mathbb{1}\left\{X_{i} \geq 0\right\}-1 \geq V_{i}\right\} \\
+& \left(X_{i}, U_{i}, V_{i}\right)^{\prime} \sim N(0, \Sigma)
+\end{aligned}
+\]
+
+where \(\alpha_{0}=1.00, \alpha_{1}=0.10, \alpha_{2}=0.01, \beta_{1}\) is to be varied across simulation sets, \(\Sigma_{11}=\sigma_{X}^{2}=1.0^{2}\), \(\Sigma_{22}=\sigma_{U}^{2}=1.0^{2}, \Sigma_{33}=\sigma_{V}^{2}=0.5^{2}, \Sigma_{12}=\rho_{X U} \cdot \sigma_{X} \cdot \sigma_{U}=0.5 \cdot 1.0^{2}, \Sigma_{13}=\rho_{X V} \cdot \sigma_{X} \cdot \sigma_{V}=0.0 \cdot 1.0 \cdot 0.5\), and \(\Sigma_{23}=\rho_{U V} \cdot \sigma_{U} \cdot \sigma_{V}=0.5 \cdot 1.0 \cdot 0.5\). In this setup, we have
+
+\[
+\text { Treatment Effect }=\beta_{1} \text {. }
+\]
+
+We simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{F M R D}=0\) of treatment nullity using the procedure described in Section C.1. Table 2 shows simulated acceptance probabilities based on 2,500 multiplier bootstrap replications for 2,500 Monte Carlo replications for each of the sample sizes \(n=1,000,2,000\), and 4,000 . The results, exhibiting the same qualitative features as those in the previous subsections, evidence the power as well as the size correctness.
+
+\section*{D. 2 Example: Sharp Mean RDD}
+Consider the case of sharp RDD presented in Sections B. 1 and C.2. We generate an i.i.d. sample \(\left\{\left(Y_{i}, D_{i}, X_{i}\right)\right\}_{i=1}^{n}\) through the following data generating process:
+
+\[
+\begin{aligned}
+& Y_{i}=\alpha_{0}+\alpha_{1} X_{i}+\alpha_{2} X_{i}^{2}+\beta_{1} D_{i}+U_{i}, \\
+& D_{i}=\mathbb{1}\left\{X_{i} \geq 0\right\} \\
+& \left(X_{i}, U_{i}\right)^{\prime} \sim N(0, \Sigma),
+\end{aligned}
+\]
+
+\section*{Supplementary Material}
+where \(\alpha_{0}=1.00, \alpha_{1}=0.10, \alpha_{2}=0.01, \beta_{1}\) is to be varied across simulation sets, \(\Sigma_{11}=\sigma_{X}^{2}=1.0^{2}\), \(\Sigma_{22}=\sigma_{U}^{2}=1.0^{2}\), and \(\Sigma_{12}=\rho_{X U} \cdot \sigma_{X} \cdot \sigma_{U}=0.5 \cdot 1.0^{2}\). In this setup, we have
+
+\[
+\text { Treatment Effect }=\beta_{1} .
+\]
+
+We simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{S M R D}=0\) of treatment nullity using the procedure described in Section C.2. Table 3 shows simulated acceptance probabilities based on 2,500 multiplier bootstrap replications for 2,500 Monte Carlo replications for each of the sample sizes \(n=1,000,2,000\), and 4,000 . The first column under \(\beta_{1}=0.00\) shows that simulated acceptance probabilities are close to the designed nominal probability, \(95 \%\). The next four columns show that the acceptance probability decreases in \(\beta_{1}\), and the rate of decrease is higher for the larger sample sizes. These results evidence the power as well as the size correctness.
+
+In addition to the above data generating process, we also consider the data generating processes employed by Calonico, Cattaneo and Titiunik (2014) for the sake of comparisons under the sharp mean RDD. An i.i.d. sample of size \(n=500\) is generated in the following manner:
+
+\[
+\begin{aligned}
+& Y_{i}=\mu\left(X_{i}\right)+U_{i}, \\
+& D_{i}=\mathbb{1}\left\{X_{i} \geq 0\right\}, \\
+& X_{i} \sim 2 \mathcal{B}(2,4)-1, \\
+& U_{i} \sim N\left(0,0.1295^{2}\right),
+\end{aligned}
+\]
+
+where \(\mathcal{B}(2,4)\) denotes the beta distribution with parameters \((2,4)\). Two models of \(\mu\) are considered. The first one is due to Lee (2008):
+
+\[
+\mu(x)= \begin{cases}0.48+1.27 x+7.18 x^{2}+20.21 x^{3}+21.54 x^{4}+7.33 x^{5} & \text { if } x<0 \\ 0.52+0.84 x-3.00 x^{2}+7.99 x^{3}-9.01 x^{4}+3.56 x^{5} & \text { if } x \geq 0\end{cases}
+\]
+
+The second one is due to Ludwig and Miller (2007):
+
+\[
+\mu(x)= \begin{cases}3.71+2.30 x+3.28 x^{2}+1.45 x^{3}+0.23 x^{4}+0.03 x^{5} & \text { if } x<0 \\ 0.26+18.49 x-54.81 x^{2}+74.30 x^{3}-45.02 x^{4}+9.83 x^{5} & \text { if } x \geq 0\end{cases}
+\]
+
+We simulate the coverage probability of the true treatment effect for the nominal probability of \(95 \%\). Table 4 shows simulated coverage probabilities based on 2,500 multiplier bootstrap replications for 5,000 Monte Carlo replications - we run 5,000 iterations to have our results comparable with those of Calonico, Cattaneo and Titiunik (2014) who also ran 5,000 iterations. The first two columns indicate coverage probabilities under the conventional non-robust approach with the the fixed-neighborhood standard error estimators (FN) and the plug-in residual standard error estimators (PI), copied from Table I of Calonico, Cattaneo and Titiunik (2014). The next two columns indicate coverage probabilities under the robust approach with the the fixed-neighborhood standard error estimators (FN) and the plug-in residual standard error estimators (PI), copied from Table I of Calonico, Cattaneo and Titiunik (2014). Finally, the last column report the coverage probabilities under the robust multiplier bootstrap approach. The numbers are similar to each other. As a robust approach, the robust MB is certainly better than the conventional approaches. MB is slightly better than PI, but is slightly worse than FN. As such, for cases like the sharp mean RDD for which the existing FN method is available, we recommend that the users employ FN.
+
+\section*{Supplementary Material}
+\section*{D. 3 Example: Fuzzy Mean RKD}
+Consider the case of fuzzy RKD presented in Sections B. 2 and C.3. We generate an i.i.d. sample \(\left\{\left(Y_{i}, D_{i}, X_{i}\right)\right\}_{i=1}^{n}\) through the following data generating process:
+
+\[
+\begin{aligned}
+& Y_{i}=\alpha_{0}+\alpha_{1} X_{i}+\alpha_{2} X_{i}^{2}+\beta_{1} D_{i}+U_{i}, \\
+& D_{i}=X_{i} \cdot\left(2 \cdot \mathbb{1}\left\{X_{i} \geq 0\right\}-1\right)+V_{i}, \\
+& \left(X_{i}, U_{i}, V_{i}\right)^{\prime} \sim N(0, \Sigma),
+\end{aligned}
+\]
+
+where \(\alpha_{0}=1.00, \alpha_{1}=0.10, \alpha_{2}=0.01, \beta_{1}\) is to be varied across simulation sets, \(\Sigma_{11}=\sigma_{X}^{2}=1.0^{2}\), \(\Sigma_{22}=\sigma_{U}^{2}=1.0^{2}, \Sigma_{33}=\sigma_{V}^{2}=0.1^{2}, \Sigma_{12}=\rho_{X U} \cdot \sigma_{X} \cdot \sigma_{U}=0.5 \cdot 1.0^{2}, \Sigma_{13}=\rho_{X V} \cdot \sigma_{X} \cdot \sigma_{V}=0.0 \cdot 1.0 \cdot 0.1\), and \(\Sigma_{23}=\rho_{U V} \cdot \sigma_{U} \cdot \sigma_{V}=0.5 \cdot 1.0 \cdot 0.1\). In this setup, we have
+
+\[
+\text { Treatment Effect }=\beta_{1} \text {. }
+\]
+
+We simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{F M R K}=0\) of treatment nullity using the procedure described in Section C.3. Table 5 shows simulated acceptance probabilities based on 2,500 multiplier bootstrap replications for 2,500 Monte Carlo replications for each of the sample sizes \(n=1,000,2,000\), and 4,000 . The results, exhibiting the same qualitative features as those in the previous subsections, evidence the power as well as the size correctness.
+
+\section*{D. 4 Example: Sharp Mean RKD}
+Consider the case of sharp RKD presented in Sections B. 3 and C.4. We generate an i.i.d. sample \(\left\{\left(Y_{i}, D_{i}, X_{i}\right)\right\}_{i=1}^{n}\) through the following data generating process:
+
+\[
+\begin{aligned}
+& Y_{i}=\alpha_{0}+\alpha_{1} X_{i}+\alpha_{2} X_{i}^{2}+\beta_{1} D_{i}+U_{i}, \\
+& D_{i}=X_{i} \cdot\left(2 \cdot \mathbb{1}\left\{X_{i} \geq 0\right\}-1\right), \\
+& \left(X_{i}, U_{i}\right)^{\prime} \sim N(0, \Sigma),
+\end{aligned}
+\]
+
+where \(\alpha_{0}=1.00, \alpha_{1}=0.10, \alpha_{2}=0.01, \beta_{1}\) is to be varied across simulation sets, \(\Sigma_{11}=\sigma_{X}^{2}=1.0^{2}\), \(\Sigma_{22}=\sigma_{U}^{2}=1.0^{2}\), and \(\Sigma_{12}=\rho_{X U} \cdot \sigma_{X} \cdot \sigma_{U}=0.5 \cdot 1.0^{2}\). In this setup, we have
+
+\[
+\text { Treatment Effect }=\beta_{1} .
+\]
+
+We simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{S M R K}=0\) of treatment nullity using the procedure described in Section C.4. Table 6 shows simulated acceptance probabilities based on 2,500 multiplier bootstrap replications for 2,500 Monte Carlo replications for each of the sample sizes \(n=1,000,2,000\), and 4,000 . The results, exhibiting the same qualitative features as those in the previous subsection, evidence the power as well as the size correctness.
+
+\section*{D. 5 Example: Sharp Quantile RDD}
+Consider the case of sharp quantile RDD presented in Sections B. 5 and C.6. We generate an i.i.d. sample \(\left\{\left(Y_{i}, D_{i}, X_{i}\right)\right\}_{i=1}^{n}\) through the following data generating process:
+
+\[
+\begin{aligned}
+& Y_{i}=\alpha_{0}+\alpha_{1} X_{i}+\alpha_{2} X_{i}^{2}+\beta_{1} D_{i}+\left(\gamma_{0}+\gamma_{1} D_{i}\right) \cdot U_{i}, \\
+& D_{i}=\mathbb{1}\left\{X_{i} \geq 0\right\} \\
+& \left(X_{i}, U_{i}\right)^{\prime} \sim N(0, \Sigma),
+\end{aligned}
+\]
+
+where \(\alpha_{0}=1.00, \alpha_{1}=0.10, \alpha_{2}=0.01, \beta_{1}\) is to be varied across simulation sets, \(\gamma_{0}=1, \gamma_{1}\) is to be varied across simulation sets, \(\Sigma_{11}=\sigma_{X}^{2}=1.0^{2}, \Sigma_{22}=\sigma_{U}^{2}=1.0^{2}\), and \(\Sigma_{12}=\rho_{X U} \cdot \sigma_{X} \cdot \sigma_{U}=0.5 \cdot 1.0^{2}\). In this setup, we have
+
+\[
+\theta \text {-th Conditional Quantile Treatment Effect at } x=0=\beta_{1}+\gamma_{1} F_{U \mid X}^{-1}(\theta \mid 0) .
+\]
+
+We set \(\Theta^{\prime \prime}=[a, 1-a]=[0.20,0.80]\) as the set of quantiles on which we conduct inference. We use a grid with the interval size of 0.02 to approximate the continuum \(\Theta^{\prime \prime}\) for numerical evaluation of functions defined on \(\Theta^{\prime \prime}\). First, we simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{S Q R D}\left(\theta^{\prime \prime}\right)=\) \(0 \forall \theta^{\prime \prime} \in[a, 1-a]\) of uniform treatment nullity using the procedure described in Section C.6. Next, we simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{S Q R D}\left(\theta^{\prime \prime}\right)=\tau_{S Q R D}\left(\theta^{\prime \prime \prime}\right) \forall \theta^{\prime \prime}, \theta^{\prime \prime \prime} \in[a, 1-a]\) of treatment homogeneity using the procedure described in Section C.6.
+
+Table 7 show simulated acceptance probabilities based on 2,500 multiplier bootstrap replications for 2,500 Monte Carlo replications for each of the sample sizes \(n=1,000,2,000\), and 4,000 . Part (A) reports results for the test of uniform treatment nullity and part (B) shows results for the test of treatment homogeneity. The top panel (I) presents results across alternative values of \(\beta_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\gamma_{1}=0\). The bottom panel (II) presents results across alternative values of \(\gamma_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\beta_{1}=0\). The nominal acceptance probability is \(95 \%\).
+
+The first column of each part of the table shows that simulated acceptance probabilities are close to the designed nominal probability, \(95 \%\). The next four columns in parts (I) (A) and (II) (A) of the table show that the acceptance probability decreases in \(\beta_{1}\) and \(\gamma_{1}\), respectively, and the rate of decrease is higher for the larger sample sizes. These results evidence the power as well as the size correctness for the test of uniform treatment nullity. In part (I) (B), all the simulated acceptance probabilities are close to the designed nominal probability, \(95 \%\). This is consistent with the fact that \(\beta_{1}\) does not contribute to treatment heterogeneity. On the other hand, part (II) (A) of the table shows that the acceptance probability decreases in \(\gamma_{1}\), and the rate of decrease is higher for the larger sample sizes. These results evidence the power as well as the size correctness for the test of treatment homogeneity.
+
+\section*{D. 6 Example: Fuzzy Quantile RKD}
+Consider the case of fuzzy quantile RKD presented in Sections B. 6 and C.7. We generate an i.i.d. sample \(\left\{\left(Y_{i}, D_{i}, X_{i}\right)\right\}_{i=1}^{n}\) through the following data generating process:
+
+\[
+\begin{aligned}
+& Y_{i}=\alpha_{0}+\alpha_{1} X_{i}+\alpha_{2} X_{i}^{2}+\beta_{1} D_{i}+\left(\gamma_{0}+\gamma_{1} D_{i}\right) \cdot U_{i}, \\
+& D_{i}=X_{i} \cdot\left(2 \cdot \mathbb{1}\left\{X_{i} \geq 0\right\}-1\right)+V_{i} \\
+& \left(X_{i}, U_{i}, V_{i}\right)^{\prime} \sim N(0, \Sigma)
+\end{aligned}
+\]
+
+where \(\alpha_{0}=1.00, \alpha_{1}=0.10, \alpha_{2}=0.01, \beta_{1}\) is to be varied across simulation sets, \(\gamma_{0}=1, \gamma_{1}\) is to be varied across simulation sets, \(\Sigma_{11}=\sigma_{X}^{2}=1.0^{2}, \Sigma_{22}=\sigma_{U}^{2}=1.0^{2}, \Sigma_{33}=\sigma_{V}^{2}=0.1^{2}\), \(\Sigma_{12}=\rho_{X U} \cdot \sigma_{X} \cdot \sigma_{U}=0.5 \cdot 1.0^{2}, \Sigma_{13}=\rho_{X V} \cdot \sigma_{X} \cdot \sigma_{V}=0.0 \cdot 1.0 \cdot 0.1\), and \(\Sigma_{23}=\rho_{U V} \cdot \sigma_{U} \cdot \sigma_{V}=0.5 \cdot 1.0 \cdot 0.1\).
+
+\[
+\theta \text {-th Conditional Quantile Treatment Effect at } x=0=\beta_{1}+\gamma_{1} F_{U \mid X}^{-1}(\theta \mid 0) .
+\]
+
+We set \(\Theta^{\prime \prime}=[a, 1-a]=[0.20,0.80]\) as the set of quantiles on which we conduct inference. We use a grid with the interval size of 0.02 to approximate the continuum \(\Theta^{\prime \prime}\) for numerical evaluation of functions defined on \(\Theta^{\prime \prime}\). First, we simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{F Q R K}\left(\theta^{\prime \prime}\right)=\) \(0 \forall \theta^{\prime \prime} \in[a, 1-a]\) of uniform treatment nullity using the procedure described in Section C.7. Next, we simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{F Q R K}\left(\theta^{\prime \prime}\right)=\tau_{F Q R K}\left(\theta^{\prime \prime \prime}\right) \forall \theta^{\prime \prime}, \theta^{\prime \prime \prime} \in[a, 1-a]\) of treatment homogeneity using the procedure described in Section C.7.
+
+\section*{Supplementary Material}
+Table 8 show simulated acceptance probabilities based on 2,500 multiplier bootstrap replications for 2,500 Monte Carlo replications for each of the sample sizes \(n=1,000,2,000\), and 4,000 . Part (A) reports results for the test of uniform treatment nullity and part (B) shows results for the test of treatment homogeneity. The top panel (I) presents results across alternative values of \(\beta_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\gamma_{1}=0\). The bottom panel (II) presents results across alternative values of \(\gamma_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\beta_{1}=0\). The nominal acceptance probability is \(95 \%\). The results, exhibiting the same qualitative features as those in the previous three subsections, evidence the power as well as the size correctness for both of the tests of uniform treatment nullity and treatment homogeneity.
+
+\section*{D. 7 Example: Sharp Quantile RKD}
+Consider the case of sharp quantile RKD presented in Sections B.7 and C.8. We generate an i.i.d. sample \(\left\{\left(Y_{i}, D_{i}, X_{i}\right)\right\}_{i=1}^{n}\) through the following data generating process:
+
+\[
+\begin{aligned}
+& Y_{i}=\alpha_{0}+\alpha_{1} X_{i}+\alpha_{2} X_{i}^{2}+\beta_{1} D_{i}+\left(\gamma_{0}+\gamma_{1} D_{i}\right) \cdot U_{i}, \\
+& D_{i}=X_{i} \cdot\left(2 \cdot \mathbb{1}\left\{X_{i} \geq 0\right\}-1\right) \\
+& \left(X_{i}, U_{i}\right)^{\prime} \sim N(0, \Sigma)
+\end{aligned}
+\]
+
+where \(\alpha_{0}=1.00, \alpha_{1}=0.10, \alpha_{2}=0.01, \beta_{1}\) is to be varied across simulation sets, \(\gamma_{0}=1, \gamma_{1}\) is to be varied across simulation sets, \(\Sigma_{11}=\sigma_{X}^{2}=1.0^{2}, \Sigma_{22}=\sigma_{U}^{2}=1.0^{2}\), and \(\Sigma_{12}=\rho_{X U} \cdot \sigma_{X} \cdot \sigma_{U}=0.5 \cdot 1.0^{2}\).
+
+\[
+\theta \text {-th Conditional Quantile Treatment Effect at } x=0=\beta_{1}+\gamma_{1} F_{U \mid X}^{-1}(\theta \mid 0) .
+\]
+
+We set \(\Theta^{\prime \prime}=[a, 1-a]=[0.20,0.80]\) as the set of quantiles on which we conduct inference. We use a grid with the interval size of 0.02 to approximate the continuum \(\Theta^{\prime \prime}\) for numerical evaluation of functions defined on \(\Theta^{\prime \prime}\). First, we simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{S Q R K}\left(\theta^{\prime \prime}\right)=\) \(0 \forall \theta^{\prime \prime} \in[a, 1-a]\) of uniform treatment nullity using the procedure described in Section C.8. Next, we simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{S Q R K}\left(\theta^{\prime \prime}\right)=\tau_{S Q R K}\left(\theta^{\prime \prime \prime}\right) \forall \theta^{\prime \prime}, \theta^{\prime \prime \prime} \in[a, 1-a]\) of treatment homogeneity using the procedure described in Section C.8.
+
+Table 9 show simulated acceptance probabilities based on 2,500 multiplier bootstrap replications for 2,500 Monte Carlo replications for each of the sample sizes \(n=1,000,2,000\), and 4,000 . Part (A) reports results for the test of uniform treatment nullity and part (B) shows results for the test of treatment homogeneity. The top panel (I) presents results across alternative values of \(\beta_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\gamma_{1}=0\). The bottom panel (II) presents results across alternative values of \(\gamma_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\beta_{1}=0\). The nominal acceptance probability is \(95 \%\). The results, exhibiting the same qualitative features as those in the previous subsection, evidence the power as well as the size correctness for both of the tests of uniform treatment nullity and treatment homogeneity.
+
+\section*{D. 8 Example: Group Covariate and Test of Heterogeneous Treatment Effects}
+Consider the case of fuzzy RDD with heterogeneous groups presented in Sections B. 8 and C.9. We generate an i.i.d. sample \(\left\{\left(Y_{i}^{*}, D_{i}^{*}, G_{i}, X_{i}\right)\right\}_{i=1}^{n}\) through the following data generating process:
+
+\[
+\begin{aligned}
+& Y_{i}^{*}=\alpha_{0}+\alpha_{1} X_{i}+\alpha_{2} X_{i}^{2}+\beta_{1} D_{i}^{*} \cdot \mathbb{1}\left\{G_{i}=1\right\}+\beta_{2} D_{i}^{*} \cdot \mathbb{1}\left\{G_{i}=2\right\}+U_{i}, \\
+& D_{i}^{*}=\mathbb{1}\left\{2 \cdot \mathbb{1}\left\{X_{i} \geq 0\right\}-1 \geq V_{i}\right\}, \\
+& G_{i} \sim \operatorname{Bernoulli}(\pi)+1, \\
+& \left(X_{i}, U_{i}, V_{i}\right)^{\prime} \sim N(0, \Sigma),
+\end{aligned}
+\]
+
+where \(\alpha_{0}=1.00, \alpha_{1}=0.10, \alpha_{2}=0.01, \beta_{1}\) or \(\beta_{2}\) is to be varied across simulation sets, \(\pi=0.5\), \(\Sigma_{11}=\sigma_{X}^{2}=1.0^{2}, \Sigma_{22}=\sigma_{U}^{2}=1.0^{2}, \Sigma_{33}=\sigma_{V}^{2}=0.5^{2}, \Sigma_{12}=\rho_{X U} \cdot \sigma_{X} \cdot \sigma_{U}=0.5 \cdot 1.0^{2}, \Sigma_{13}=\) \(\rho_{X V} \cdot \sigma_{X} \cdot \sigma_{V}=0.0 \cdot 1.0 \cdot 0.5\), and \(\Sigma_{23}=\rho_{U V} \cdot \sigma_{U} \cdot \sigma_{V}=0.5 \cdot 1.0 \cdot 0.5\). In this setup, we have
+
+\[
+\text { Treatment Effect }= \begin{cases}\beta_{1} & \text { if } G_{i}=1 \\ \beta_{2} & \text { if } G_{i}=2\end{cases}
+\]
+
+First, we simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{G F M R D}(1)=\tau_{G F M R D}(2)=0\) of joint treatment nullity using the procedure described in Section C.9. Part (A) of Table 10 shows simulated acceptance probabilities based on 2,500 multiplier bootstrap replications for 2,500 Monte Carlo replications for each of the sample sizes \(n=1,000,2,000\), and 4,000 . The first column under \(\beta_{1}=0.00\) shows that simulated acceptance probabilities are close to the designed nominal probability, \(95 \%\). The next four columns show that the acceptance probability decreases in \(\beta_{1}\), and the rate of decrease is higher for the larger sample sizes. These results evidence the power as well as the size correctness for the test of joint treatment nullity.
+
+We next simulate the \(95 \%\) test for the null hypothesis \(H_{0}: \tau_{G F M R D}(1)=\tau_{G F M R D}(2)\) of treatment homogeneity using the procedure described in Section C.9. Part (B) of Table 10 shows simulated acceptance probabilities based on 2,500 multiplier bootstrap replications for 2,500 Monte Carlo replications for each of the sample sizes \(n=1,000,2,000\), and 4,000 . The first column under \(\beta_{1}=0.00\) shows that simulated acceptance probabilities are close to the designed nominal probability, \(95 \%\). The next four columns show that the acceptance probability decreases in \(\beta_{1}\), and the rate of decrease is higher for the larger sample sizes. These results evidence the power as well as the size correctness for the test of treatment homogeneity.
+
+\section*{E Additional Mathematical Appendix}
+\section*{E. 1 Auxiliary Lemmas for the Ten Examples}
+\section*{E.1.1 Lemmas Related to Asymptotic Equicontinuity}
+The following Lemma establish the relationship between convergence in probability in supremum norm and convergence in probability with respect to the semi-metric \(\rho\) induced by the limiting Gaussian process. We use this lemma in the corollary below to ensure that the asymptotically equicontinuous process, \(\hat{\nu}_{\xi, n}^{ \pm}\), evaluating \(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)\)can nicely approximate this process evaluating \(Q_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)\).
+
+Lemma 9. Suppose that Assumptions S, K, and SQRD hold. Define
+
+\[
+\rho\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right), Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right)\right)=\lim _{n \rightarrow \infty}\left(\sum_{i=1}^{n} E\left|f_{n i}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right)\right)-f_{n i}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right)\right)\right|^{2}\right)^{1 / 2}
+\]
+
+where
+
+\[
+f_{n i}(y)=\frac{e_{0}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1} r_{2}\left(\frac{X_{i}}{h_{n}}\right) K\left(\frac{X_{i}}{h_{n}}\right)\left[1\left\{Y_{i} \leq y\right\}-F_{Y \mid X}\left(y \mid X_{i}\right)\right] \delta_{i}^{ \pm}}{\sqrt{n h_{n}} f_{X}(0)}
+\]
+
+Then, \(\left\|\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)-Q_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)\right\|_{[a, 1-a]} \xrightarrow{\vec{p}} 0\) implies \(\sup _{\theta^{\prime \prime} \in[a, 1-a]} \rho\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right), Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right)\right) \xrightarrow[x]{p} 0\).\\
+Proof. We will show the claim for the + side only. The case of the - side can be similarly proved.
+
+\section*{Supplementary Material}
+Notice that by Law of Iterated Expectations and calculations under Assumption S, K, and SQRD (ii),
+
+\[
+\begin{aligned}
+& \rho^{2}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right), Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right) \\
+= & \lim _{n} \sum_{i=1}^{n} E\left[E \left[\left(\frac{e_{0}^{\prime}\left(\Gamma_{2}^{+}\right)^{-1} r_{2}\left(\frac{X_{i}}{h_{n}}\right) K\left(\frac{X_{i}}{h_{n}}\right) \delta_{i}^{+}}{\sqrt{n h_{n}} f_{X}(0)}\right.\right.\right. \\
+& {\left.\left.\left.\left[\mathbb{1}\left\{Y_{i} \leq \hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}-F_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)-\mathbb{1}\left\{Y_{i} \leq Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}+F_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)\right]\right)^{2} \mid X_{i}\right]\right] } \\
+= & \lim _{n} E\left[\frac { e _ { 0 } ^ { \prime } ( \Gamma _ { 2 } ^ { + } ) ^ { - 1 } \Psi ^ { + } ( \Gamma _ { 2 } ^ { + } ) ^ { - 1 } e _ { 0 } } { f _ { X } ( 0 ) } E \left[\left(\mathbb{1}\left\{Y_{i} \leq \hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}-F_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)\right.\right.\right. \\
+& \left.\left.\left.\quad-\mathbb{1}\left\{Y_{i} \leq Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}+F_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)\right)^{2} \mid X_{i}\right]\right]
+\end{aligned}
+\]
+
+It then suffices to show that
+
+\[
+\begin{array}{r}
+E\left[\left(\mathbb{1}\left\{Y_{i} \leq \hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}-F_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)-\mathbb{1}\left\{Y_{i} \leq Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}+F_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)\right)^{2} \mid X_{i}\right] \\
+\xrightarrow[x]{p} 0
+\end{array}
+\]
+
+uniformly in \(\theta^{\prime \prime}\). We write
+
+\[
+\begin{aligned}
+& \left(\mathbb{1}\left\{Y_{i} \leq \hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}-F_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)-\mathbb{1}\left\{Y_{i} \leq Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}+F_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)\right)^{2} \\
+= & \left(\left[\mathbb{1}\left\{Y_{i} \leq \hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}-\mathbb{1}\left\{Y_{i} \leq Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}\right]-\left[F_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)-F_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)\right]\right)^{2} \\
+= & {\left[\mathbb{1}\left\{Y_{i} \leq \hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}-\mathbb{1}\left\{Y_{i} \leq Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}\right]^{2}+\left[F_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)-F_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)\right]^{2} } \\
+& -2\left[\mathbb{1}\left\{Y_{i} \leq \hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}-\mathbb{1}\left\{Y_{i} \leq Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right\}\right]\left[F_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)-F_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)\right] \\
+= & (1)+(2)-(3) .
+\end{aligned}
+\]
+
+The conditional expectation of part (1) is
+
+\[
+\begin{array}{r}
+E\left[(1) \mid X_{i}\right]=F_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)+F_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right)-2 F_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \wedge Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid X_{i}\right) \\
+\underset{x}{p} 0
+\end{array}
+\]
+
+uniformly by the uniform consistency \(\left\|\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)-Q_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)\right\|_{[a, 1-a]} \xrightarrow{p} 0\) and the continuous mapping theorem under Assumption SQRD (i). The uniform convergence in probability of other parts, (2) and (3), can be concluded similarly.
+
+Similar results hold in the cases of Sharp FQRK, Fuzzy FQRK and Fuzzy FQRD as the following\\
+Lemma 10. Suppose that Assumption SQRK or FQRK holds, in addition to Assumptions \(S\) and \(K\). Define
+
+\[
+\rho\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right), Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right)=\lim _{n \rightarrow \infty}\left(\sum_{i=1}^{n} E\left|f_{n i}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right)-f_{n i}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right)\right|^{2}\right)^{1 / 2}
+\]
+
+where
+
+\[
+f_{n i}(y)=\frac{e_{1}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1} r_{2}\left(\frac{X_{i}}{h_{n}}\right) K\left(\frac{X_{i}}{h_{n}}\right)\left[1\left\{Y_{i} \leq y\right\}-F_{Y \mid X}\left(y \mid X_{i}\right)\right] \delta_{i}^{ \pm}}{\sqrt{n h_{n}} f_{X}(0)} .
+\]
+
+Then, \(\left\|\hat{Q}_{Y \mid X}(\cdot \mid 0)-Q_{Y \mid X}(\cdot \mid 0)\right\|_{[a, 1-a]} \xrightarrow{\vec{p}} 0\) implies \(\sup _{\theta^{\prime \prime} \in[a, 1-a]} \rho\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right), Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right) \xrightarrow[x]{p} 0\).
+
+\section*{Supplementary Material}
+Lemma 11. Suppose that Assumptions S, K, and FQRD hold. Define
+
+\[
+\rho\left(\hat{Q}_{Y^{d} \mid C}\left(\theta^{\prime \prime}\right), Q_{Y^{d} \mid C}\left(\theta^{\prime \prime}\right)\right)=\lim _{n \rightarrow \infty}\left(\sum_{i=1}^{n} E\left|f_{n i}\left(\hat{Q}_{Y^{d} \mid C}\left(\theta^{\prime \prime}\right), d\right)-f_{n i}\left(Q_{Y^{d} \mid C}\left(\theta^{\prime \prime}\right), d\right)\right|^{2}\right)^{1 / 2}
+\]
+
+where
+
+\[
+f_{n i}(y, d)=\frac{e_{1}^{\prime}\left(\Gamma_{2}^{ \pm}\right)^{-1} r_{2}\left(\frac{X_{i}}{h_{n}}\right) K\left(\frac{X_{i}}{h_{n}}\right)\left[\mathbb{1}\left\{Y_{i}^{*} \leq y, D_{i}^{*}=d\right\}-\mu_{1}\left(X_{i}, y, d\right)\right] \delta_{i}^{ \pm}}{\sqrt{n h_{n}} f_{X}(0)} .
+\]
+
+Then, \(\left\|\hat{Q}_{Y^{d} \mid C}\left(\theta^{\prime \prime}\right)-Q_{Y^{d} \mid C}\left(\theta^{\prime \prime}\right)\right\|_{[a, 1-a] \times\{0,1\}} \xrightarrow[x]{\vec{x}} 0\) implies \(\sup _{\left(\theta^{\prime \prime}, d\right) \in[a, 1-a] \times\{0,1\}} \rho\left(\hat{Q}_{Y^{d} \mid C}\left(\theta^{\prime \prime}\right), Q_{Y^{d} \mid C}\left(\theta^{\prime \prime}\right)\right) \xrightarrow[x]{\vec{x}}\) 0.
+
+Since the proofs are mostly identical to Lemma 9, we omit them.
+
+\section*{E.1.2 Lemmas for Uniform Consistency of Estimators for Conditional Densities}
+Recall that in Section C.6, the existence of an uniform consistency estimator is assumed in Assumption SQRD (iii) An example of estimators \(\hat{f}_{Y \mid X}\left(y, 0^{ \pm}\right)\)that satisfy Assumption SQRD (iii) are
+
+\[
+\hat{f}_{Y \mid X}\left(y \mid 0^{ \pm}\right)=\frac{\frac{1}{n a_{n}^{2}} \sum_{i=1}^{n} K\left(\frac{Y_{i}-y}{a_{n}}\right) K\left(\frac{X_{i}}{a_{n}}\right) \delta_{i}^{ \pm}}{\frac{1}{n a_{n}} \sum_{i=1}^{n} K\left(\frac{X_{i}}{a_{n}}\right) \delta_{i}^{ \pm}}=\frac{\hat{g}_{Y X}\left(y, 0^{ \pm}\right)}{\hat{g}_{X}\left(0^{ \pm}\right)}
+\]
+
+The following result gives the sufficient conditions for \(f_{Y \mid X}\left(y \mid 0^{ \pm}\right)\)to satisfy Assumption SQRD (iii).\\
+Lemma 12. Suppose that Assumptions \(S\), \(K\), and \(S Q R D\) hold. In addition, let \(f_{Y X}\) be continuously differentiable on \(\mathscr{Y}_{1} \times[\underline{x}, 0)\), and \(\mathscr{Y}_{1} \times(0, \bar{x}]\) with bounded partial derivatives and assume kernel \(K\) be symmetric. Let \(a_{n}\) be such that \(a_{n} \rightarrow 0, n a_{n} \rightarrow \infty, \frac{n a_{n}^{2}}{\left|\log a_{n}\right|} \rightarrow \infty, \frac{\left|\log a_{n}\right|}{\log \log a_{n}} \rightarrow \infty\), and \(a_{n}^{2} \leq c a_{2 n}^{2}\) for some \(c>0\). then \(\hat{f}_{Y \mid X}\left(y \mid 0^{ \pm}\right)\)such that \(\sup _{y \in \mathscr{Y}_{1}}\left|\hat{f}_{Y \mid X}\left(y \mid 0^{ \pm}\right)-f_{Y \mid X}\left(y \mid 0^{ \pm}\right)\right|=o_{p}^{x}(1)\).
+
+Proof. We will show only for \(0^{+}\). The other side follows similarly. Note the denominator \(\hat{g}_{X}\left(0^{+}\right)=\) \(\frac{1}{2} f_{X}\left(0^{+}\right)+o_{p}^{x}(1)\) and \(f_{X}(0)\) is bounded away from 0 under Assumption 1(ii).
+
+Thus, it suffices to show \(\sup _{y \in \mathscr{Y}_{1}}\left|\hat{g}_{Y X}\left(y, 0^{+}\right)-\frac{1}{2} f_{Y X}\left(y, 0^{+}\right)\right|=o_{p}^{x}(1)\). Note \(\left|\hat{g}_{Y X}\left(y, 0^{+}\right)-\frac{1}{2} f_{Y X}\left(y, 0^{+}\right)\right| \leq\) \(\left|\hat{g}_{Y X}\left(y, 0^{+}\right)-E \hat{g}_{Y X}\left(y, 0^{+}\right)\right|+\left|E \hat{g}_{Y X}\left(y, 0^{+}\right)-\frac{1}{2} f_{Y X}\left(y, 0^{+}\right)\right|\). To control the stochastic part, Theorem 2.3 of Giné and Guillou (2002) suggests that
+
+\[
+\sup _{y \in \mathscr{Y}_{1}}\left|\hat{g}_{Y X}\left(y, 0^{+}\right)-E \hat{g}_{Y X}\left(y, 0^{+}\right)\right|=O_{a . s .}^{x}\left(\sqrt{\frac{\log \frac{1}{a_{n}}}{n a_{n}^{2}}}\right) .
+\]
+
+For the deterministic part, under the smoothness assumptions made on \(f_{Y X}\), a mean value expansion gives
+
+\[
+\begin{aligned}
+& E\left[\hat{g}_{Y X}\left(y, 0^{+}\right)\right] \\
+= & \int_{\mathbb{R}} \int_{\mathbb{R}_{+}} K(u) K(v)\left(f_{Y X}\left(y, 0^{+}\right)+\frac{\partial}{\partial y} f_{Y X}\left(y^{*}, x^{*}\right) u a_{n}+\frac{\partial}{\partial x} f_{Y X}\left(y^{*}, x^{*}\right) v a_{n}\right) d u d v \\
+= & \frac{1}{2} f_{Y X}\left(y, 0^{+}\right)+O\left(a_{n}\right)
+\end{aligned}
+\]
+
+uniformly on \(\mathscr{V}_{1}\), where \(\left(y^{*}, x^{*}\right)\) is a linear combination of \((y, 0)\) and \(\left(y+u h_{n}, v h_{n}\right)\). This concludes the proof.
+
+\section*{Supplementary Material}
+In Section C.8, we assumed the existence of an estimator that satisfies Assumption SQRK. Define
+
+\[
+\hat{f}_{Y \mid X}(y \mid 0)=\frac{\frac{1}{n a_{n}^{2}} \sum_{i=1}^{n} K\left(\frac{Y_{i}-y}{a_{n}}\right) K\left(\frac{X_{i}}{a_{n}}\right)}{\frac{1}{n a_{n}} \sum_{i=1}^{n} K\left(\frac{X_{i}}{a_{n}}\right)}=\frac{\hat{f}_{Y X}(y, 0)}{\hat{f}_{X}(0)}
+\]
+
+The following lemma provides such estimator.\\
+Lemma 13. Assume Assumption \(S\) and \(S Q R K\) (i) (b) hold. In addition, if the joint density \(f_{Y X}(y, x)\) is twice continuously differentiable on \(\mathscr{Y}_{2} \times[\underline{x}, \bar{x}]\) with bounded partial derivatives for some open set \(\mathscr{Y}_{2}\) such that \(\mathscr{Y}_{1} \subset \mathscr{Y}_{2} \subset \mathscr{Y}\). Let \(K\) be a bounded kernel function such that \(\left\{x \mapsto K\left(x-x^{\prime} / a\right): a>\right.\) \(\left.0, x^{\prime} \in \mathbb{R}\right\}\) forms a VC type class (e.g. Epanechnikov) and \(\int_{\mathbb{R}} u K(u) d u=0, \int_{\mathbb{R}} u^{2} K^{2}(u) d u<0\). The bandwidth \(a_{n} \rightarrow 0\) satisfies \(\frac{n a_{n}^{2}}{\left|\log a_{n}\right|} \rightarrow \infty, \frac{\left|\log a_{n}\right|}{\log \log a_{n}} \rightarrow \infty\), and \(a_{n}^{2} \leq c a_{2 n}^{2}\) for some \(c>0, \frac{h_{n}^{3} \log \frac{1}{a_{n}}}{a_{n}^{2}} \rightarrow 0\) and \(n h_{n}^{3} a_{n}^{4} \rightarrow 0\). Then, \(\sup _{y \in \mathscr{\mathscr { Y } _ { 1 }}} \sqrt{n h_{n}^{3}}\left|\hat{f}_{Y \mid X}(y \mid 0)-f_{Y \mid X}(y \mid 0)\right| \underset{x}{p} 0\). Thus, Assumption \(S Q R K\) (iv) is satisfied.
+
+We remark that the condition \(\frac{h_{n}^{3} \log \frac{1}{a_{n}}}{a_{n}^{2}} \rightarrow 0\) is easily satisfied by the bandwidth selectors \(h_{1, n}^{M S E} \propto\) \(n^{-1 / 5}\) and \(h_{1, n}^{R O T} \propto n^{-1 / 4}\) proposed in Section F along with a Silverman's rule of thumb \(a_{n} \propto n^{-1 / 6}\).\\
+Proof. First note that the denominator is essentially \(f_{X}(0)+o_{p}^{x}(1)\) and \(f_{X}(0)>C>0\). It then suffices to show that the numerator \(\hat{f}_{Y X}(y, 0)\) satisfies \(\sup _{y \in \mathscr{Y}_{1}} \sqrt{n h_{n}}\left|\hat{f}_{Y X}(y, 0)-f_{Y X}(y, 0)\right|=o_{p}^{x}(1)\). Write \(\left|\hat{f}_{Y X}(y, 0)-f_{Y X}(y, 0)\right| \leq\left|\hat{f}_{Y X}(y, 0)-E \hat{f}_{Y X}(y, 0)\right|+\left|E \hat{f}_{Y X}(y, 0)-f_{Y X}(y, 0)\right|\). To control the stochastic part, Theorem 2.3 of Giné and Guillou (2002) suggests that
+
+\[
+\sup _{y \in \mathscr{\mathscr { G }}_{1}}\left|\hat{f}_{Y X}(y, 0)-E \hat{f}_{Y X}(y, 0)\right|=O_{a . s .}^{x}\left(\sqrt{\frac{\log \frac{1}{a_{n}}}{n a_{n}^{2}}}\right)
+\]
+
+For the deterministic part, a mean value expansion gives
+
+\[
+\begin{aligned}
+& E\left[\hat{f}_{Y X}(y, 0)\right] \\
+= & \int_{\mathbb{R}} \int_{\mathbb{R}} K(u) K(v)\left(f_{Y X}(y, 0)+\frac{\partial}{\partial y} f_{Y X}(y, 0) u a_{n}+\frac{\partial}{\partial x} f_{Y X}(y, 0) v a_{n}\right. \\
+& \left.+\frac{\partial}{\partial y} \frac{\partial}{\partial y} f_{Y X}\left(y^{*}, x^{*}\right) u v a_{n}^{2}+\frac{1}{2} \frac{\partial^{2}}{\partial y^{2}} f_{Y X}\left(y^{*}, x^{*}\right) u^{2} a_{n}^{2}+\frac{1}{2} \frac{\partial^{2}}{\partial x^{2}} f_{Y X}\left(y^{*}, x^{*}\right) v^{2} a_{n}^{2}\right) d u d v \\
+= & f_{Y X}(y, 0)+O\left(a_{n}^{2}\right)
+\end{aligned}
+\]
+
+uniformly on \(\mathscr{Y}_{1}\), where \(\left(y^{*}, x^{*}\right)\) is a linear combination of \((y, 0)\) and \(\left(y+u h_{n}, v h_{n}\right)\). Thus, the conclusion follows from \(\frac{\log \frac{1}{a_{n}} h_{n}^{3}}{a_{n}^{2}} \rightarrow 0\) and \(n h_{n}^{3} a_{n}^{4} \rightarrow 0\).
+
+In Section 4.5, the densities in the denominator can be estimated in the following manner. Define
+
+\[
+\hat{f}_{Y^{d} \mid C}(y)=\frac{\hat{f}_{Y \mid X D}\left(y \mid 0^{+}, d\right) \hat{\mu}_{2,2}\left(0^{+}, d\right)-\hat{f}_{Y \mid X D}\left(y \mid 0^{-}, d\right) \hat{\mu}_{2,2}\left(0^{-}, d\right)}{\hat{\mu}_{2,2}\left(0^{+}, d\right)-\hat{\mu}_{2,2}\left(0^{-}, d\right)}
+\]
+
+where \(\hat{f}_{Y \mid X D}\left(y \mid 0^{ \pm}, 1\right)=\frac{\frac{1}{n a_{n}^{2}} \sum_{i=1}^{n} K\left(\frac{X_{i}}{a_{n}}\right) K\left(\frac{Y_{i}-y}{a_{n}}\right) D_{i} \delta_{i}^{ \pm}}{\frac{1}{n a_{n}} \sum_{i=1}^{n} K\left(\frac{X_{i}}{a_{n}}\right) D_{i} \delta_{i}^{ \pm}}, \hat{f}_{Y \mid X D}\left(y \mid 0^{ \pm}, 0\right)=\frac{\frac{1}{n a_{n}^{2}} \sum_{i=1}^{n} K\left(\frac{X_{i}}{a_{n}}\right) K\left(\frac{Y_{i}-y}{a_{n}}\right)\left(1-D_{i}\right) \delta_{i}^{ \pm}}{\frac{1}{n a_{n}} \sum_{i=1}^{n} K\left(\frac{X_{i}}{a_{n}}\right)\left(1-D_{i}\right) \delta_{i}^{ \pm}}\), with bandwidths \(a_{n}\). The following lemma shows uniform consistency of these estimators.\\
+Lemma 14. Suppose that Assumptions, \(S, K\), and \(F Q R D\) hold. In addition, for each \(d=0,1\), let \(f_{Y X \mid D}(\cdot, \cdot \mid d)\) be continuously differentiable on \(\mathscr{Y}_{1} \times[\underline{x}, 0)\), and \(\mathscr{V}_{1} \times(0, \bar{x}]\) with bounded partial derivatives and assume kernel \(K\) be symmetric. Let \(a_{n}\) be such that \(a_{n} \rightarrow 0, n a_{n} \rightarrow \infty, \frac{n a_{n}^{2}}{\left|\log a_{n}\right|} \rightarrow \infty\), \(\frac{\left|\log a_{n}\right|}{\log \log a_{n}} \rightarrow \infty\), and \(a_{n}^{2} \leq c a_{2 n}^{2}\) for some \(c>0\). Then, \(\sup _{y \in \mathcal{Y}}\left|\hat{f}_{Y^{0} \mid C}(y)-f_{Y^{0} \mid C}(y)\right|=o_{p}^{x}(1)\) and \(\sup _{y \in \mathcal{Y}}\left|\hat{f}_{Y^{1} \mid C}(y)-f_{Y^{1} \mid C}(y)\right|=o_{p}^{x}(1)\).
+
+Proof. Note that
+
+\[
+f_{Y^{1} \mid C}(y)=\frac{\partial}{\partial y} F_{Y^{1} \mid C}(y)=\frac{\frac{\partial}{\partial y} \mu_{1}\left(0^{+},(y, 1)\right)-\frac{\partial}{\partial y} \mu_{1}\left(0^{-},(y, 1)\right)}{\mu_{2}\left(0^{+}, 1\right)-\mu_{2}\left(0^{-}, 1\right)}
+\]
+
+The numerator can be estimated consistently with the local quadratic regression defined above. For the denominator, we have
+
+\[
+\begin{aligned}
+\frac{\partial}{\partial y} \mu_{1}\left(0^{+},(y, 1)\right) & =\frac{\partial}{\partial y} E\left[\mathbb{1}\left\{Y_{i} \leq y\right\} \mathbb{1}\left\{D_{i}=1\right\} \mid X_{i}=0^{+}\right] \\
+& =\frac{\partial}{\partial y}\left(E\left[\mathbb{1}\left\{Y_{i} \leq y\right\} \mid X_{i}=0^{+}, D_{i}=1\right] \mathbb{P}^{x}\left(D_{i}=1 \mid X_{i}=0^{+}\right)+0\right) \\
+& =\frac{\partial}{\partial y} F_{Y^{1} \mid X D}\left(y \mid 0^{+}, 1\right) \mu_{2}\left(0^{+}, 1\right) \\
+& =f_{Y^{1} \mid X D}\left(y \mid 0^{+}, 1\right) \mu_{2}\left(0^{+}, 1\right)
+\end{aligned}
+\]
+
+Uniform consistency of \({\hat{Y^{1} \mid X, D}}\left(y \mid 0^{ \pm}, 1\right)\) can be shown by applying Theorem 2.3 of Giné and Guillou (2002), as in Lemma 12. Also \(\hat{\mu}_{2, p}\left(0^{ \pm}\right)\)is uniformly consistent by Corollary 5. Corresponding result for \(\hat{f}_{Y^{0} \mid C}(y)\) can be shown similarly.
+
+\section*{E.1.3 Proof of Lemma 8}
+Proof. The Hadamard differentiability of the left-inverse operator and a mean value expansion give
+
+\[
+\begin{aligned}
+\frac{\partial}{\partial x} Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) & =\lim _{\delta \downarrow 0} \frac{Q_{Y \mid X}\left(\theta^{\prime \prime} \mid \delta\right)-Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)}{\delta} \\
+& =\lim _{\delta \downarrow 0} \frac{\Phi\left(F_{Y \mid X}(\cdot \mid \delta)\right)\left(\theta^{\prime \prime}\right)-\Phi\left(F_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right)\left(\theta^{\prime \prime}\right)}{\delta} \\
+& =\lim _{\delta \downarrow 0} \frac{\Phi\left(\left(F_{Y \mid X}\left(\cdot \mid 0^{+}\right)+\delta \frac{\partial}{\partial x} F_{Y \mid X}\left(\cdot \mid x^{*}\right)\right)\left(\theta^{\prime \prime}\right)-\Phi\left(F_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right)\left(\theta^{\prime \prime}\right)\right.}{\delta} \\
+& =\Phi_{F_{Y \mid X}(\cdot \mid 0)}^{\prime}\left(\frac{\partial}{\partial x} F_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right)\left(\theta^{\prime \prime}\right) \\
+& =-\frac{F_{Y \mid X}^{(1)}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{+}\right)}{f_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)} \\
+& =\phi\left(F_{Y \mid X}^{(1)}\left(\cdot \mid 0^{+}\right)\right)\left(\theta^{\prime \prime}\right)
+\end{aligned}
+\]
+
+by the definition of Hadamard Derivative and then Lemma 3.9.23 (i) of van der Vaart and Wellner (1996).
+
+\section*{E.1.4 Uniform Consistency of \(\hat{Q}_{Y^{d} \mid C}\) under Assumption FQRD}
+The next lemma, which follows from Theorem 1, shows the weak convergence in probability of the estimators of the local conditional quantiles of the potential outcomes.\\
+Lemma 15. Suppose that Assumptions S, K, and FQRD hold. Then, \(\sup _{\mathscr{Y}_{1}}\left|\hat{Q}_{Y^{d} \mid C}-Q_{Y^{d} \mid C}\right| \underset{x \times \xi}{p} 0\) for \(d=1,0\).
+
+\section*{Supplementary Material}
+Proof. Write \(\Phi\left(F_{Y^{d} \mid C}\right)\left(\theta^{\prime \prime}\right):=\inf \left\{y \in \mathscr{Y}_{1}: F_{Y^{d} \mid C}(y) \geq \theta^{\prime \prime}\right\}\) for \(\theta^{\prime \prime} \in[a, 1-a]\). The weak convergence of \(\nu_{n}^{ \pm}\)from Theorem 1, Lemma 3.9.23 (i) of van der Vaart and Wellner (1996), and the functional delta method yield
+
+\[
+\sqrt{n h_{n}}\left[\hat{Q}_{Y^{d} \mid C}(\cdot)-Q_{Y^{d} \mid C}(\cdot)\right]=\sqrt{n h_{n}}\left[\Phi\left(\hat{F}_{Y^{d} \mid C}\right)(\cdot)-\Phi\left(F_{Y^{d} \mid C}\right)(\cdot)\right]=O_{p}^{x}(1)
+\]
+
+The result follows from Assumption FQRD and Slutsky's lemma.
+
+\section*{E. 2 Proofs of Corollaries for the Ten Examples}
+We use \(\mathbb{G}\) and \(\mathbb{G}_{ \pm}\)to denote generic zero mean Gaussian processes that appear in some intermediate steps in the proofs without having to specify their covariance structure. They differ across different examples, but are fixed within each one.
+
+\section*{E.2.1 Proof of Corollary 1}
+Proof. We first verify that the Assumptions required by Theorem 1 are satisfied.\\
+To show Assumption 1(ii)(a), it is true that the subgraphs of \(\left\{(y, d) \mapsto \mathbb{1}\left\{y \leq y^{\prime}\right\}: y^{\prime} \in \mathscr{Y}_{1}\right\}\) and \(\left\{(y, d) \mapsto \mathbb{1}\left\{d=d^{\prime}\right\}: d^{\prime} \in \mathscr{D}\right\}\) can not shatter any two-point sets (for definition, see Section 9.1.1 of \(\operatorname{Kosorok}(2008))\); to see this, let \(\left(y_{1}, d_{1}, r_{1}\right),\left(y_{2}, d_{2}, r_{2}\right) \in \mathscr{Y}_{1} \times \mathscr{D} \times \mathbb{R}\) with \(y_{1} \leq y_{2}\). Notice that \(\left\{\left(y_{1}, d_{1}, r_{1}\right)\right\}\) can never be picked out by any function in either of the classes. Therefore they are of VC-subgraph classes with VC index of 2. This implies that they are of VC type and Lemma 6 implies that the set of products \(\left\{(t, y) \mapsto \mathbb{1}\left\{y \leq y^{\prime}\right\} t: y^{\prime} \in \mathscr{Y}_{1}\right\}\) is of VC type with square integrable constant function 1 as its envelope. On the other hand, \(\left\{x \mapsto E\left[\mathbb{1}\left\{Y_{i} \leq y\right\} \mathbb{1}\{t=d\} \mid X_{i}=x\right]:(y, d) \in \mathscr{Y}_{1} \times \mathscr{D}\right\}\) is of VC type with square integrable envelope 1 because of Example 19.7 of van der Vaart (1998) under boundedness of \(\mathscr{Y}_{1}\) and Lipschitz continuity from Assumption S (a) and FQRD (i). Assumption 1(ii)(c) follows from Assumption FQRD (i) since for any \(\left(y_{1}, d_{1}\right),\left(y_{2}, d_{2}\right) \in \mathscr{Y} \times \mathscr{D}\), if \(d_{1}=d_{2}=d\) \(E\left[\mathbb{1}\left\{Y \leq y_{1}, D=d\right\} \mathbb{1}\left\{Y \leq y_{2}, D=d\right\} \mid X=x\right]=E\left[\mathbb{1}\left\{Y \leq y_{1} \wedge y_{2}, D=d\right\} \mid X=x\right]\) and It equals zero if \(d_{1} \neq d_{2}\). Assumption 1 (ii) (d) is implied by the right continuity of \(\left(y^{\prime}, d^{\prime}\right) \mapsto \mathbb{1}\left\{y \leq y^{\prime}, d=d^{\prime}\right\}\) on \(\mathscr{Y}_{1} \times\{0,1\}\) in \(y\) for each \(d\). Assumption 4 is implied by Lemma 7. Assumption FQRD (iv) and Lemma 3.9.23 of van der Vaart and Wellner (1996) (applicable under Assumption FQRD (i), (iii) and (iv)) implies Hadamard differentiability of Assumption 2(i).
+
+The rest are directly implied by Assumption S, K, M, and FQRD. Thus we may apply Theorem 1 and acquire \(\nu_{n} \rightsquigarrow \mathbb{G}:=\mathbb{G}^{+}-\mathbb{G}^{-}\)for a zero mean Gaussian process \(\mathbb{G}\), where
+
+\[
+\left[\begin{array}{l}
+\nu_{n}\left(y, d_{1}, d_{2}, 1\right) \\
+\nu_{n}\left(y, d_{1}, d_{2}, 2\right)
+\end{array}\right]=\left[\begin{array}{c}
+\sqrt{n h_{n}}\left[\left(\hat{\mu}_{1,2}\left(0^{+}, y, d_{1}\right)-\hat{\mu}_{1,2}\left(0^{-}, y, d_{1}\right)\right)-\left(\mu_{1}\left(0^{+}, y, d_{1}\right)-\mu_{1}\left(0^{-}, y, d_{1}\right)\right)\right] \\
+\sqrt{n h_{n}}\left[\left(\hat{\mu}_{2,2}\left(0^{+}, d_{2}\right)-\hat{\mu}_{2,2}\left(0^{-}, d_{2}\right)\right)-\left(\mu_{2}\left(0^{+}, d_{2}\right)-\mu_{2}\left(0^{-}, d_{2}\right)\right)\right]
+\end{array}\right]
+\]
+
+Theorem 1 further implies
+
+\[
+\begin{aligned}
+& \sqrt{n h}\left(\hat{\tau}_{F Q R D}(\cdot)-\tau_{F Q R D}(\cdot)\right) \\
+\rightsquigarrow & \mathbb{G}_{F Q R D}^{\prime}(\cdot) \\
+:= & \Upsilon_{W}^{\prime}\left(\frac{\left[\mu_{2}\left(0^{+}, d\right)-\mu_{2}\left(0^{-}, d\right)\right] \mathbb{G}(\cdot, \cdot, \cdot, 1)-\left[\mu_{1}\left(0^{+}, y, d\right)-\mu_{1}\left(0^{-}, y, d\right)\right] \mathbb{G}(\cdot, \cdot, \cdot, 2)}{\left[\mu_{2}\left(0^{+}, d\right)-\mu_{2}\left(0^{-}, d\right)\right]^{2}}\right)(\cdot) \\
+= & -\frac{\left[\mu_{2}\left(0^{+}, d\right)-\mu_{2}\left(0^{-}, d\right)\right] \mathbb{G}\left(Q_{Y^{1} \mid C}(\cdot), 1,1,1\right)-\left[\mu_{1}\left(0^{+}, Q_{Y^{1} \mid C}(\cdot), 1\right)-\mu_{1}\left(0^{-}, Q_{Y^{1} \mid C}(\cdot), 1\right)\right] \mathbb{G}\left(Q_{Y^{1} \mid C}(\cdot), 1,1,2\right)}{f_{Y^{1} \mid C}\left(Q_{Y^{1} \mid C}(\cdot)\right)\left[\mu_{2}\left(0^{+}, 1\right)-\mu_{2}\left(0^{-}, 1\right)\right]^{2}} \\
+& +\frac{\left[\mu_{2}\left(0^{+}, d\right)-\mu_{2}\left(0^{-}, d\right)\right] \mathbb{G}\left(Q_{Y^{0} \mid C}(\cdot), 0,0,1\right)-\left[\mu_{1}\left(0^{+}, Q_{Y^{0} \mid C}(\cdot), 0\right)-\mu_{1}\left(0^{-}, Q_{Y^{0} \mid C}(\cdot), 0\right)\right] \mathbb{G}\left(Q_{Y^{1} \mid C}(\cdot), 0,0,2\right)}{f_{Y^{0} \mid C}\left(Q_{Y^{0} \mid C}(\cdot)\right)\left[\mu_{2}\left(0^{+}, 0\right)-\mu_{2}\left(0^{-}, 0\right)\right]^{2}}
+\end{aligned}
+\]
+
+\section*{Supplementary Material}
+For the conditional weak convergence part of the proof, define
+
+\[
+\begin{aligned}
+& \Upsilon_{W}^{\prime}\left(\widehat{\mathbb{Y}}_{n}\right)\left(\theta^{\prime \prime}\right)= \\
+- & \frac{\left[\mu_{2}\left(0^{+}, 1\right)-\mu_{2}\left(0^{-}, 1\right)\right] \widehat{\mathbb{X}}_{n}^{\prime}\left(Q_{Y^{1} \mid C}\left(\theta^{\prime \prime}\right), 1,1,1\right)-\left[\mu_{1}\left(0^{+}, Q_{Y^{1} \mid C}\left(\theta^{\prime \prime}\right), 1\right)-\mu_{1}\left(0^{-}, Q_{Y^{1} \mid C}\left(\theta^{\prime \prime}\right), 1\right)\right] \widehat{\mathbb{X}}_{n}^{\prime}\left(Q_{Y^{1} \mid C}\left(\theta^{\prime \prime}\right), 1,1,2\right)}{f_{Y^{1} \mid C}\left(Q_{Y^{1} \mid C}\left(\theta^{\prime \prime}\right)\right)\left[\mu_{2}\left(0^{+}, 1\right)-\mu_{2}\left(0^{-}, 1\right)\right]^{2}} \\
++ & \frac{\left[\mu_{2}\left(0^{+}, 0\right)-\mu_{2}\left(0^{-}, 0\right)\right] \widehat{\mathbb{X}}_{n}^{\prime}\left(Q_{Y^{0} \mid C}\left(\theta^{\prime \prime}\right), 0,0,1\right)-\left[\mu_{1}\left(0^{+}, Q_{Y^{0} \mid C}\left(\theta^{\prime \prime}\right), 0\right)-\mu_{1}\left(0^{-}, Q_{Y^{0} \mid C}\left(\theta^{\prime \prime}\right), 0\right)\right] \widehat{\mathbb{X}}_{n}^{\prime}\left(Q_{Y^{0} \mid C}\left(\theta^{\prime \prime}\right), 0,0,2\right)}{f_{Y^{0} \mid C}\left(Q_{Y^{0} \mid C}\left(\theta^{\prime \prime}\right)\right)\left[\mu_{2}\left(0^{+}, 0\right)-\mu_{2}\left(0^{-}, 0\right)\right]^{2}}
+\end{aligned}
+\]
+
+Theorem 2 then suggests that \(\Upsilon_{W}^{\prime}\left(\widehat{\mathbb{Y}}_{n}\right) \underset{\xi}{\underset{\xi}{p}} \mathbb{G}_{F Q R D}^{\prime}\). Thus it suffices to show
+
+\[
+\sup _{\theta^{\prime \prime} \in[a, 1-a]}\left|\widehat{\Upsilon}_{W}^{\prime}\left(\widehat{\mathbb{Y}}_{n}\right)\left(\theta^{\prime \prime}\right)-\Upsilon_{W}^{\prime}\left(\widehat{\mathbb{Y}}_{n}\right)\left(\theta^{\prime \prime}\right)\right| \underset{x \times \xi}{p} 0
+\]
+
+which is true by the asymptotic \(\rho\)-equicontinuity of \(\mathbb{X}_{n}^{\prime}\) (which is inherited from the conditional weak convergence of \(\hat{\nu}_{\xi, n}\) ), the uniform consistency of \(\hat{Q}_{Y^{d} \mid C}\) and \(\hat{f}_{Y^{d} \mid C}\) for \(d=1,0\) by Lemmas 14,15 and 11.
+
+\section*{E.2.2 Proof of Corollary 2}
+Proof. To check the assumptions required by Theorems 1 and 2, for Assumption 1(ii)(a), notice that \(\left\{\mu_{2}(x, 0):[\underline{x}, \bar{x}] \mapsto \mathbb{R}\right\}\) is a singleton, and therefore forms a VC type class with envelope 1 . Assumption 4 follows from Lemma 7. Other conditions can be checked as before. Applying Theorem 1 gives
+
+\[
+\frac{\left(\mu_{2}\left(0^{+}, 0\right)-\mu_{2}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,1)-\left(\mu_{1}\left(0^{+}, 0\right)-\mu_{1}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,2)}{\left(\mu_{2}\left(0^{+}, 0\right)-\mu_{2}\left(0^{-}, 0\right)\right)^{2}} \rightsquigarrow N\left(0, \sigma_{F M R D}^{2}\right)
+\]
+
+with probability approaching one. According to Lemma 2, it remains to show
+
+\[
+\begin{aligned}
+& \frac{\left(\mu_{2}\left(0^{+}, 0\right)-\mu_{2}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,1)-\left(\mu_{1}\left(0^{+}, 0\right)-\mu_{1}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,2)}{\left(\mu_{2}\left(0^{+}, 0\right)-\mu_{2}\left(0^{-}, 0\right)\right)^{2}} \\
+- & \frac{\left(\hat{\mu}_{2,2}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,1)-\left(\hat{\mu}_{1,2}\left(0^{+}, 0\right)-\hat{\mu}_{1}\left(0^{-}, 0\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(0,2)}{\left(\hat{\mu}_{2,2}\left(0^{+}, 0\right)-\hat{\mu}_{2,2}\left(0^{-}, 0\right)\right)^{2}}=o_{p}^{x \times \xi}(1) .
+\end{aligned}
+\]
+
+This is the case due to the uniform consistency of \(\hat{\mu}_{1,2}\left(0^{ \pm}, 0\right), \hat{\mu}_{2,2}\left(0^{ \pm}, 0\right)\) that follows from Corollary 5 , the independence between data and \(\xi_{i}\) under Assumption M, and the fact that \(\left|\mu_{2}\left(0^{+}, 0\right)-\mu_{2}\left(0^{-}, 0\right)\right|>\) 0 under Assumption FMRD (i) (d).
+
+\section*{E.2.3 Proof of Corollary 3}
+Proof. It suffices to show that Assumptions S, K, M, and SMRD imply Assumptions 1, 2, and 4. Most of these implications are direct. For Assumption 1 (ii)(a), note that \(\left\{\mu_{1}(x, 0):[\underline{x}, \bar{x}] \mapsto \mathbb{R}\right\}\) is a singleton, and therefore forms a VC type class with its sole element serving as an envelope, which is integrable by Assumption SMRD (i)(a). Assumption 4 follows from Lemma 7.
+
+\section*{E.2.4 Proof of Corollary 6}
+Proof. We check that Assumption SCRD implies the assumptions required by Theorems 1 and 2,. Most are direct, and we only need to check the following three points. For Assumption 1 (ii) (a), \(\left\{x \mapsto F_{Y \mid X}\left(\theta^{\prime \prime} \mid x\right): \theta^{\prime \prime} \in \mathscr{Y}_{1}\right\}\) and \(\left\{y^{\prime} \mapsto \mathbb{1}\left\{y^{\prime} \leq \theta^{\prime \prime}\right\}: \theta^{\prime \prime} \in \mathscr{Y}_{1}\right\}\) are increasing stochastic processes bounded by one, and they are of VC-subgraph classes according to Lemma 9.10 of Kosorok (2008), and thus of VC type. For Assumption 1 (ii)(c), note that \(E\left[\left(\mathbb{1}\left\{Y_{i} \leq y_{1}\right\}-F_{Y \mid X}\left(y_{1} \mid X_{i}\right)\right)\left(\mathbb{1}\left\{Y_{i} \leq y_{2}\right\}-\right.\right.\) \(\left.\left.F_{Y \mid X}\left(y_{2} \mid X_{i}\right)\right) \mid X_{i}\right]=F_{Y \mid X}\left(y_{1} \wedge y_{2} \mid X_{i}\right)-F_{Y \mid X}\left(y_{1} \mid X_{i}\right) F_{Y \mid X}\left(y_{2} \mid X_{i}\right)\) and thus it follows from Assumption SCRD (i). Assumption 1 (ii) (d) is implied by the right continuity of \(y^{\prime} \mapsto \mathbb{1}\left\{y \leq y^{\prime}\right\}\). Assumption 4 is implied by Lemma 7 .
+
+\section*{E.2.5 Proof of Corollary 7}
+Proof. We need to check that Assumptions S, K, M, and SQRD imply all the assumptions required by Theorems 1 and 2,. The only non-trivial ones are Assumptions 1 (ii) (a), (d) 2 (i), and 4. For Assumptions 1 (ii) (a) and 4 (i), note that \(\left\{y^{\prime} \mapsto \mathbb{1}\left\{y^{\prime} \leq y\right\}: y \in \mathscr{Y}_{1}\right\}\) and \(\left\{x \mapsto F_{Y \mid X}(y \mid x): y \in \mathscr{V}_{1}\right\}\) are collections of increasing stochastic processes, and Lemma 9.10 of Kosorok (2008) suggests that they are of VC-class and thus VC type with envelope one. Assumption 1 (ii) (d) is implied by the right continuity of \(y^{\prime} \mapsto \mathbb{1}\left\{y \leq y^{\prime}\right\}\). Assumption 2 (i) follows from Lemma 3.9.23 (i) of van der Vaart and Wellner (1996) and Assumption SQRD (i). Assumption 4(b) is implied by Lemma 7.
+
+By Theorem 1, we have \(\sqrt{n h_{n}}\left[\hat{\tau}_{S Q R D}(\cdot)-\tau_{S Q R D}(\cdot)\right] \rightsquigarrow \mathbb{G}_{S Q R D}^{\prime}\), where
+
+\[
+\begin{aligned}
+\mathbb{G}_{S Q R D}^{\prime}(\cdot) & =\phi_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\mathbb{G}_{H+}\right)(\cdot)-\phi_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\mathbb{G}_{H-}\right)(\cdot) \\
+& =-\frac{\mathbb{G}_{H+}\left(Q_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right)}{f_{Y \mid X}\left(Q_{Y \mid X}\left(\cdot \mid 0^{+}\right) \mid 0^{+}\right)}+\frac{\mathbb{G}_{H-}\left(Q_{Y \mid X}\left(\cdot \mid 0^{-}\right)\right)}{f_{Y \mid X}\left(Q_{Y \mid X}\left(\cdot \mid 0^{-}\right) \mid 0^{-}\right)} .
+\end{aligned}
+\]
+
+Also, by Theorem 2, \(\phi_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)-\phi_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right) \underset{\xi}{\underset{\xi}{p}} \mathbb{G}_{S Q R D}^{\prime}\), where
+
+\[
+\phi_{F_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{ \pm}\right)\left(\theta^{\prime \prime}\right)=-\frac{\hat{\nu}_{\xi, n}^{ \pm}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right)\right)}{f_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right) \mid 0^{ \pm}\right)} .
+\]
+
+In the EMP, we replace \(f_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right), Q_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)\)by their uniformly consistent estimators \(\hat{f}_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)\), \(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)\), where the uniform consistency of the former follows from Assumption SQRD (iii) (see Lemma 9) and the uniform consistency of the latter follows from Corollary 6.
+
+By Lemma 2, it suffices to show that \(\sup _{\theta^{\prime \prime} \in[a, 1-a]} \mid\left(\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}\left(\hat{\nu}_{\xi, n}^{+}\right)\left(\theta^{\prime \prime}\right)-\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}\left(\hat{\nu}_{\xi, n}^{-}\right)\left(\theta^{\prime \prime}\right)\right)-\) \(\left(\phi_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)\left(\theta^{\prime \prime}\right)-\phi_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right)\left(\theta^{\prime \prime}\right)\right) \mid \underset{x \times \xi}{p} 0\). We first show
+
+\[
+\begin{aligned}
+& \left\|\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}\left(\hat{\nu}_{\xi, n}^{+}\left(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right)\right)-\phi_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\left(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right)\right)\right\|_{[a, 1-a]} \\
+= & \left\|-\frac{\hat{\nu}_{\xi, n}^{+}\left(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right)}{\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{+}\right) \mid 0^{+}\right)}+\frac{\hat{\nu}_{\xi, n}^{+}\left(Q_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right)}{f_{Y \mid X}\left(Q_{Y \mid X}\left(\cdot \mid 0^{+}\right) \mid 0^{+}\right)}\right\|_{[a, 1-a]} \underset{\rightarrow \times \xi}{p} 0 .
+\end{aligned}
+\]
+
+Lemma 9 and Corollary 6 along with the asymptotic equicontinuity of \(\hat{\nu}_{\xi, n}^{+}\)implied by its weak convergence in Theorem 1 suggest that \(\hat{\nu}_{\xi, n}^{+}\left(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right)-\hat{\nu}_{\xi, n}^{+}\left(Q_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right) \underset{x \times \xi}{p} 0\) uniformly. Assumption SQRD (i)(b) and the uniform consistency of both \(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{+}\right)\)and \(\hat{f}_{Y \mid X}\left(\cdot \mid 0^{+}\right)\)shows that \(f_{Y \mid X}\left(\cdot \mid 0^{+}\right)\) is bounded away from 0 uniformly, and with probability approaching one
+
+\[
+\begin{aligned}
+& \sup _{\theta^{\prime \prime} \in[a, 1-a]}\left|\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid 0^{+}\right)-f_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right) \mid 0^{+}\right)\right| \\
+\leq & \sup _{y \in \mathscr{Y}_{1}}\left|\hat{f}_{Y \mid X}\left(y \mid 0^{+}\right)-f_{Y \mid X}\left(y \mid 0^{+}\right)\right|+\sup _{\theta^{\prime \prime} \in[a, 1-a]} L\left|\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)-Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{+}\right)\right|=o_{p}^{x}(1)+o_{p}^{x}(1)
+\end{aligned}
+\]
+
+for a Lipschitz constant \(L>0\). Thus, \(\left\|-\frac{\hat{\nu}_{\xi, n}^{+}\left(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right)}{\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{+}\right) \mid 0^{+}\right)}+\frac{\hat{\nu}_{\xi, n}^{+}\left(Q_{Y \mid X}\left(\cdot \mid 0^{+}\right)\right)}{f_{Y \mid X}\left(Q_{Y \mid X}\left(\cdot 0^{+}\right) \mid 0^{+}\right)}\right\|_{[a, 1-a]} \xrightarrow{p \times \xi} 0\).\\
+Similar lines show \(\left\|\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\left(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{-}\right)\right)\right)-\phi_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\left(\hat{Q}_{Y \mid X}\left(\cdot \mid 0^{-}\right)\right)\right)\right\|_{[a, 1-a]} \underset{x \times \xi}{p} 0\) as well. Therefore, we have\\
+\(\sup _{\theta^{\prime \prime} \in[a, 1-a]}\left|\left(\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)\left(\theta^{\prime \prime}\right)-\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right)\left(\theta^{\prime \prime}\right)\right)-\left(\phi_{F_{Y \mid X}\left(\cdot \mid 0^{+}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)\left(\theta^{\prime \prime}\right)-\phi_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right)\left(\theta^{\prime \prime}\right)\right)\right| \underset{x \times \xi}{p} 0\).\\
+We then apply Lemma 2 to conclude the proof.
+
+\section*{Supplementary Material}
+\section*{E.2.6 Proof of Corollary 9}
+Proof. For the unconditional weak convergence, the assumptions required by Theorems 1 and 2, can be checked as in Corollary 7 except for Assumption 2(i) now follows from Assumption SQRK (i)(a). Applying Theorem 1, we have \(\sqrt{n h_{n}^{3}}\left[\tilde{\tau}_{S Q R K}-\tau_{S Q R K}\right] \rightsquigarrow \mathbb{G}_{S Q R D}\). It then suffices to show
+
+\[
+\sqrt{n h_{n}^{3}}\left\|\tilde{\tau}_{S Q R K}-\hat{\tau}_{S Q R K}\right\|_{\Theta^{\prime \prime}}=o_{p}^{x}(1)
+\]
+
+By definition, we only need to show
+
+\[
+\begin{aligned}
+& \sqrt{n h_{n}^{3}}\left\|\widehat{\phi}\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{ \pm}\right)\right)-\phi\left(\hat{F}_{Y \mid X}^{(1)}\left(\cdot \mid 0^{ \pm}\right)\right)\right\|_{\Theta^{\prime \prime}} \\
+= & -\sqrt{n h_{n}^{3}}\left\|\frac{\hat{F}_{Y \mid X}^{(1)}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right) \mid 0\right)}{\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)}-\frac{\hat{F}_{Y \mid X}^{(1)}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0^{ \pm}\right) \mid 0\right)}{f_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)}\right\|_{\Theta^{\prime \prime}}=o_{p}^{x}(1) .
+\end{aligned}
+\]
+
+We first claim that
+
+\[
+\sqrt{n h_{n}^{3}}\left[\hat{F}_{Y \mid X}^{(1)}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)-\hat{F}_{Y \mid X}^{(1)}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)\right]=o_{p}^{x}(1)
+\]
+
+respectively. Then by Assumption SQRK (i) (b) and uniform super-consistency of \(\hat{f}_{Y \mid X}(\cdot \mid 0)\) and \(\hat{Q}_{Y \mid X}(\cdot \mid 0), \sup _{\theta^{\prime \prime} \in[a, 1-a]}\left|\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)-f_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)\right|=o_{p}^{x}(1)\) and \(\left|\frac{1}{f_{Y \mid X}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0\right)}\right|<\) \(C<\infty\). We can thus conclude that equation (E.1) is true.
+
+To prove the claim, notice that
+
+\[
+\begin{aligned}
+& \sqrt{n h_{n}^{3}}\left[\hat{F}_{Y \mid X}^{(1)}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)-\hat{F}_{Y \mid X}^{(1)}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)\right] \\
+\leq & \sqrt{n h_{n}^{3}}\left[\hat{F}_{Y \mid X}^{(1)}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)-F_{Y \mid X}^{(1)}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)\right] \\
+& +\sqrt{n h_{n}^{3}}\left[F_{Y \mid X}^{(1)}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)-F_{Y \mid X}^{(1)}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)\right] \\
+& +\sqrt{n h_{n}^{3}}\left[F_{Y \mid X}^{(1)}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)-\hat{F}_{Y \mid X}^{(1)}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)\right] \\
+= & (1)+(2)+(3)
+\end{aligned}
+\]
+
+From Theorem 1 and the Hadamard differentiability of left inverse operator, we have \(\sqrt{n h_{n}}\left[\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)-\right.\) \(\left.Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right]=O_{p}^{x}(1)\) uniformly. An application of Slutsky's lemma implies \(\left|\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)-Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right|=\) \(O^{x}\left(\frac{1}{\sqrt{n h_{n}}}\right)\). This and Assumption SQRK (i) (a) imply (2) \(=o_{p}^{x}(1)\) uniformly in \(\theta^{\prime \prime}\). From Lemma \(1,(3)=-\nu_{n}^{ \pm}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right)+o_{p}^{x}(1)\) and \((1)=\nu_{n}^{ \pm}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right)+o_{p}^{x}(1)=\nu_{n}^{ \pm}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right)\right)+o_{p}^{x}(1)\) uniformly in \(\theta^{\prime \prime}\), where the last equality is due to Lemma 10 and asymptotic \(\rho\)-equicontinuity of \(\nu_{n}^{ \pm}\)implied by its weak convergence from Theorem 1 . Thus we have \(\sqrt{n h_{n}^{3}}\left[\hat{F}_{Y \mid X}^{(1)}\left(\hat{Q}_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)-\right.\) \(\left.\hat{F}_{Y \mid X}^{(1)}\left(Q_{Y \mid X}\left(\theta^{\prime \prime} \mid 0\right) \mid 0^{ \pm}\right)\right]=o_{p}^{x}(1)\).
+
+As for the conditional weak convergence part of the statement, Theorem 2 shows
+
+\[
+\phi_{F_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{ \pm}\right)(\cdot)=-\frac{\hat{\nu}_{\xi, n}^{ \pm}\left(Q_{Y \mid X}(\cdot \mid 0)\right)}{f_{Y \mid X}\left(Q_{Y \mid X}(\cdot \mid 0)\right)} \underset{\underset{\xi}{*}}{\stackrel{p}{\underset{ }{*}}-\frac{\mathbb{G}_{ \pm}\left(Q_{Y \mid X}(\cdot \mid 0)\right)}{f_{Y \mid X}\left(Q_{Y \mid X}(\cdot \mid 0) \mid 0\right)}}
+\]
+
+Uniform consistency of \(\hat{f}_{Y \mid X}(\cdot \mid 0), \hat{Q}_{Y \mid X}(\cdot \mid 0)\), Assumption SQRK (i), asymptotic \(\rho\)-equicontinuity of \(\nu_{\xi, n}^{ \pm}\), Lemmas 10, 2 and 13 then imply
+
+\[
+\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{ \pm}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{ \pm}\right)(\cdot)=-\frac{\hat{\nu}_{\xi, n}^{ \pm}\left(\hat{Q}_{Y \mid X}(\cdot \mid 0)\right)}{\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}(\cdot \mid 0)\right)} \underset{\underset{\xi}{p}}{\stackrel{p}{\underset{\xi}{*}}-\frac{\mathbb{G}_{ \pm}\left(Q_{Y \mid X}(\cdot \mid 0)\right)}{f_{Y \mid X}\left(Q_{Y \mid X}(\cdot \mid 0) \mid 0\right)}}
+\]
+
+\section*{Supplementary Material}
+and thus by Assumption S (a) and the continuous mapping theorem, we conclude
+
+\[
+\frac{\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{+}+\right.}^{\prime}\left(\hat{\nu}_{\xi, n}^{+}\right)(\cdot)-\widehat{\phi}_{F_{Y \mid X}\left(\cdot \mid 0^{-}\right)}^{\prime}\left(\hat{\nu}_{\xi, n}^{-}\right)(\cdot)}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)}=\frac{1}{b^{(1)}\left(0^{+}\right)-b^{(1)}\left(0^{-}\right)}\left[-\frac{\hat{\nu}_{\xi, n}^{+}\left(\hat{Q}_{Y \mid X}(\cdot \mid 0)\right)}{\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}(\cdot \mid 0) \mid 0\right)}+\frac{\hat{\nu}_{\xi, n}^{-}\left(\hat{Q}_{Y \mid X}(\cdot \mid 0)\right)}{\hat{f}_{Y \mid X}\left(\hat{Q}_{Y \mid X}(\cdot \mid 0) \mid 0\right)}\right]
+\]
+
+\section*{E.2.7 Proof of Corollary 10}
+Proof. It is direct to show that Assumption GFMRD and Lemma 7 together imply the assumptions required by Theorems 1 and 2 ,. Note for \(k=1,2,\left\{\mu_{k}(\cdot, \theta):[\underline{x}, \bar{x}] \mapsto \mathbb{R}: \theta \in\{1, \ldots, K\}\right\}\) has finite elements and therefore is of VC-subgraph class with envelope \(\max _{\theta \in\{1, \ldots, K\}} \mu_{k}(x, \theta)\) and Assumption 1 (ii)(a) is satisfied. The theorem then gives
+
+\[
+\frac{\left(\mu_{2}\left(0^{+}, \cdot\right)-\mu_{2}\left(0^{-}, \cdot\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(\cdot, 1)-\left(\mu_{1}\left(0^{+}, \cdot\right)-\mu_{1}\left(0^{-}, \cdot\right)\right) \widehat{\mathbb{X}}_{n}^{\prime}(\cdot, 2)}{\left(\mu_{2}\left(0^{+}, \cdot\right)-\mu_{2}\left(0^{-}, \cdot\right)\right)^{2}} \rightsquigarrow N\left(0, \Sigma_{G F M R D}\right)
+\]
+
+with probability approaching one. Lemmas 2 and 7 then give the desired result.
+
+\section*{F Bandwidth Choice in Practice}
+While our theory prescribes asymptotic rates of bandwidths, empirical practitioners need to choose bandwidth for each finite \(n\). In this section, we provide a guide for this matter. We emphasize that our robust inference procedure allows for large bandwidths such as the ones based on the MSE optimality. Following the bias-robust approach from Calonico, Cattaneo and Titiunik (2014), we increment the degree of local polynomial estimation by one or more to \(p\) for the purpose of bias correction while using the optimal bandwidths for the correct order \(s\). For instance, if we are interested in the local linear model ( \(s=1\) ), then we run a local quadratic regression \((p=2)\) while using the optimal bandwidths for the local linear model \((s=1)\). Generally, when we want to estimate the \(v\)-th order derivative via a local \(s\)-th order polynomial estimation, we fix the degree \(p\) such that \(0 \leq v \leq s \leq p\), and additionally \(s<p\) if one wants to implement a bias correction. We now remind the readers of the following short-hand notations: \(\Psi_{s}=\int_{\mathbb{R}} r_{s}(u) r_{s}^{\prime}(u) K^{2}(u) d u, \Psi_{s}^{ \pm}=\int_{\mathbb{R}_{+}} r_{s}(u) r_{s}^{\prime}(u) K^{2}(u) d u, \Gamma_{s}=\int_{\mathbb{R}} K(u) r_{s}(u) r_{s}^{\prime}(u) d u\), \(\Gamma_{s}^{ \pm}=\int_{\mathbb{R}_{ \pm}} K(u) r_{s}(u) r_{s}^{\prime}(u) d u, \Lambda_{s, s+1}=\int_{\mathbb{R}^{2}} u^{s+1} r_{s}(u) K(u) d u\), and \(\Lambda_{s, s+1}^{ \pm}=\int_{\mathbb{R}_{ \pm}} u^{s+1} r_{s}(u) K(u) d u\).
+
+For the main local polynomial estimation, we first derive the oracle MSE-optimal bandwidths for the \(v\)-th order derivative based on a local polynomial estimation of the \(s\)-th degree. For the numerator, we have
+
+\[
+h_{1, n}^{\text {orac }}\left(\theta_{1} \mid s, v\right)=\left(\frac{2 v+1}{2 s+2-2 v} \frac{C_{1, \theta_{1}, s, v}^{\prime}}{C_{1, \theta_{1}, s, v}^{2}}\right)^{1 /(2 s+3)} n^{-1 /(2 s+3)},
+\]
+
+where \(C_{1, \theta_{1}, s, v}^{\prime}\) and \(C_{1, \theta_{1}, s, v}^{2}\) are given by the leading terms of bias and variance, respectively:
+
+\[
+\begin{aligned}
+& C_{1, \theta_{1}, s, v}=\frac{\operatorname{Bias}\left(\mu_{1}^{(v)}\left(0^{+}, \theta_{1}\right)-\mu_{1}^{(v)}\left(0^{-}, \theta_{1}\right)\right)}{h_{1, n}^{s+1-v}\left(\theta_{1}\right)}=e_{v}^{\prime}\left[\frac{\left(\Gamma_{s}^{+}\right)^{-1} \Lambda_{s, s+1}^{+}}{(s+1)!} \mu_{1}^{(s+1)}\left(0^{+}, \theta_{1}\right)-\frac{\left(\Gamma_{s}^{-}\right)^{-1} \Lambda_{s, s+1}^{-}}{(s+1)!} \mu_{1}^{(s+1)}\left(0^{-}, \theta_{1}\right)\right] \\
+& C_{1, \theta_{1}, s, v}^{\prime}=n h_{1, n}^{2 v+1}\left(\theta_{1}\right) \operatorname{Var}\left(\mu_{1}^{(v)}\left(0^{ \pm}, \theta_{1}\right)-\mu_{1}^{(v)}\left(0^{-}, \theta_{1}\right)\right)= \\
+& \frac{e_{v}^{\prime}\left[\sigma_{11}\left(\theta_{1}, \theta_{1} \mid 0^{+}\right)\left(\Gamma_{s}^{+}\right)^{-1} \Psi_{s}^{+}\left(\left(\theta_{1}, 1\right)\left(\theta_{1}, 1\right)\right)\left(\Gamma_{s}^{+}\right)^{-1}+\sigma_{11}\left(\theta_{1}, \theta_{1} \mid 0^{-}\right)\left(\Gamma_{s}^{-}\right)^{-1} \Psi_{s}^{-}\left(\left(\theta_{1}, 1\right)\left(\theta_{1}, 1\right)\right)\left(\Gamma_{s}^{-}\right)^{-1}\right] e_{v}}{f_{X}(0)}
+\end{aligned}
+\]
+
+\section*{Supplementary Material}
+Likewise, for the denominator, we have
+
+\[
+h_{2, n}^{o r a c}\left(\theta_{2} \mid s, v\right)=\left(\frac{2 v+1}{2 s+2-2 v} \frac{C_{2, \theta_{2}, s, v}^{\prime}}{C_{2, \theta_{2}, s, v}^{2}}\right)^{1 /(2 s+3)} n^{-1 /(2 s+3)}
+\]
+
+where \(C_{2, \theta_{2}, s, v}^{\prime}\) and \(C_{2, \theta_{2}, s, v}^{2}\) are given by the leading terms of bias and variance, respectively:
+
+\[
+\begin{aligned}
+& C_{2, \theta_{2}, s, v}=\frac{\operatorname{Bias}\left(\mu_{2}^{(v)}\left(0^{+}, \theta_{2}\right)-\mu_{2}^{(v)}\left(0^{-}, \theta_{2}\right)\right)}{h_{2, n}^{s+1-v}\left(\theta_{2}\right)}=e_{v}^{\prime}\left[\frac{\left(\Gamma_{s}^{+}\right)^{-1} \Lambda_{s, s+1}^{+}}{(s+1)!} \mu_{2}^{(s+1)}\left(0^{+}, \theta_{2}\right)-\frac{\left(\Gamma_{s}^{-}\right)^{-1} \Lambda_{s, s+1}^{-}}{(s+1)!} \mu_{2}^{(s+1)}\left(0^{-}, \theta_{2}\right)\right] \\
+& C_{2, \theta_{2}, s, v}^{\prime}=n h_{2, n}^{2 v+1}\left(\theta_{2}\right) \operatorname{Var}\left(\mu_{2}^{(v)}\left(0^{+}, \theta_{2}\right)-\mu_{2}^{(v)}\left(0^{-}, \theta_{2}\right)\right)= \\
+& \frac{e_{v}^{\prime}\left[\sigma_{22}\left(\theta_{2}, \theta_{2} \mid 0^{+}\right)\left(\Gamma_{s}^{+}\right)^{-1} \Psi_{s}^{+}\left(\left(\theta_{2}, 2\right)\left(\theta_{2}, 2\right)\right)\left(\Gamma_{s}^{+}\right)^{-1}+\sigma_{22}\left(\theta_{2}, \theta_{2} \mid 0^{-}\right)\left(\Gamma_{s}^{-}\right)^{-1} \Psi_{s}^{-}\left(\left(\theta_{2}, 2\right)\left(\theta_{2}, 2\right)\right)\left(\Gamma_{s}^{-}\right)^{-1}\right] e_{v}}{f_{X}(0)}
+\end{aligned}
+\]
+
+In practice, the unknowns in the above bandwidth selectors need to be replaced by their consistent estimates. We propose the following three-step procedure.
+
+Step 1: Estimate \(f_{X}(0)\) by the kernel density estimator
+
+\[
+\hat{f}_{X}(0)=\frac{1}{n c_{n}} \sum_{i=1}^{n} K\left(\frac{X_{i}}{c_{n}}\right)
+\]
+
+with the bandwidth \(c_{n}\) determined by Silverman's rule of thumb
+
+\[
+c_{n}=1.06 \hat{\sigma}_{X} n^{-1 / 5},
+\]
+
+where \(\hat{\sigma}_{X}\) is the standard deviation of the sample \(\left\{X_{i}\right\}_{i=1}^{n}\). We then compute the preliminary bandwidths for first-stage estimates, \(\mu_{k}^{(v)}, k=1,2\), by
+
+\[
+\begin{aligned}
+& h_{1, n}^{0}=\left(\frac{2 v+1}{2 s+2-2 v} \frac{C_{1,0}^{\prime}}{C_{1,0}^{2}}\right)^{1 / 5} n^{-1 / 5}, \\
+& h_{2, n}^{0}=\left(\frac{2 v+1}{2 s+2-2 v} \frac{C_{2,0}^{\prime}}{C_{2,0}^{2}}\right)^{1 / 5} n^{-1 / 5},
+\end{aligned}
+\]
+
+where the constant terms
+
+\[
+\begin{aligned}
+& C_{k, 0}=e_{v}^{\prime}\left[\frac{\left(\Gamma_{s}^{+}\right)^{-1} \Lambda_{s, s+1}^{+}}{(s+1!)} \bar{\mu}_{k,+}^{(s+1)}-\frac{\left(\Gamma_{s}^{-}\right)^{-1} \Lambda_{s, s+1}^{-}}{(s+1)!} \bar{\mu}_{k,-}^{(s+1)}\right] \\
+& C_{k, 0}^{\prime}=e_{v}^{\prime}\left[\bar{\sigma}_{k,+}^{2}\left(\Gamma_{s}^{+}\right)^{-1} \Psi_{s}^{+}\left(\Gamma_{s}^{+}\right)^{-1}+\bar{\sigma}_{k,-}^{2}\left(\Gamma_{s}^{-}\right)^{-1} \Psi_{s}^{-}\left(\Gamma_{s}^{-}\right)^{-1}\right] e_{v} / \hat{f}_{X}(0)
+\end{aligned}
+\]
+
+depend on the preliminary estimates \(\bar{\mu}_{k, \pm}^{(s+1)}\) and \(\bar{\sigma}_{k, \pm}^{2}\) for \(\mu_{k}^{(v)}\) and \(\sigma_{k k}\), respectively. These preliminary estimates may be obtained by global parametric polynomial regressions of order greater or equal to \(s+1\) and the sample variance of \(\bar{\mu}_{k, \pm}^{(s+1)}\). Through simulations to be presented below, we find that simply setting \(\bar{\mu}_{k, \pm}^{(s+1)}\) and \(\bar{\sigma}_{k, \pm}^{2}\) to one in this first step also yields fine results, whereas \(\hat{f}_{X}(0)\) should not be substituted by an arbitrary constant.
+
+Step 2 Using the preliminary bandwidths obtained in Step 1, we next obtain the first stage estimates \(\left[\check{\mu}_{k}\left(0^{ \pm}, \theta_{k}\right), \ldots, \check{\mu}_{k}^{(s)}\left(0^{ \pm}, \theta_{k}\right)\right]^{\prime}=\check{\alpha}_{k \pm, s}^{\prime} \operatorname{diag}\left[1,1!/ h_{k, n}^{0}, \ldots, s!/\left(h_{k, n}^{0}\right)^{s}\right]\) as follows. Solve
+
+\[
+\begin{aligned}
+& \check{\alpha}_{1 \pm, s}^{\prime}:=\underset{\alpha \in \mathbb{R}^{s+1}}{\arg \min } \sum_{i=1}^{n} \delta_{i}^{ \pm}\left(g_{1}\left(Y_{i} \mid \theta_{1}\right)-r_{s}\left(X_{i} / h_{0, n}\right)^{\prime} \alpha\right) K\left(\frac{X_{i}}{h_{1, n}^{0}}\right), \\
+& \check{\alpha}_{2 \pm, s}^{\prime}:=\underset{\alpha \in \mathbb{R}^{s+1}}{\arg \min } \sum_{i=1}^{n} \delta_{i}^{ \pm}\left(g_{2}\left(D_{i}, \theta_{2}\right)-r_{s}\left(X_{i} / h_{0, n}\right)^{\prime} \alpha\right) K\left(\frac{X_{i}}{h_{2, n}^{0}}\right) .
+\end{aligned}
+\]
+
+\section*{Supplementary Material}
+Using these estimates of the local polynomial coefficients, we in turn compute first stage estimates based on \(s\)-th order expansion
+
+\[
+\begin{aligned}
+\check{\mu}_{k}\left(x, \theta_{k}\right) & =\left[\mu_{k}\left(0^{+}, \theta_{k}\right)+\mu_{k}^{(1)}\left(0^{+}, \theta_{k}\right) x+\ldots+\mu_{k}^{(s)}\left(0^{+}, \theta_{k}\right) \frac{x^{s}}{s!}\right] \delta_{x}^{+} \\
+& +\left[\mu_{k}\left(0^{-}, \theta_{k}\right)+\mu_{k}^{(1)}\left(0^{-}, \theta_{k}\right) x+\ldots+\mu_{k}^{(s)}\left(0^{-}, \theta_{k}\right) \frac{x^{s}}{s!}\right] \delta_{x}^{-},
+\end{aligned}
+\]
+
+for \(k=1,2\). The covariance estimates are in turn computed by
+
+\[
+\begin{aligned}
+& \hat{\sigma}_{11}\left(\theta_{1}, \theta_{1} \mid 0^{ \pm}\right)=\left(\frac{\sum_{i=1}^{n}\left(g_{1}\left(Y_{i}, \theta_{1}\right)-\check{\mu}_{1}\left(X_{i}, \theta_{1}\right)\right)^{2} K\left(\frac{X_{i}}{h_{1, n}^{0}}\right) \delta_{i}^{ \pm}}{\sum_{i=1}^{n} K\left(\frac{X_{i}}{h_{1, n}^{0}}\right) \delta_{i}^{ \pm}}\right)^{1 / 2}, \\
+& \hat{\sigma}_{22}\left(\theta_{2}, \theta_{2} \mid 0^{ \pm}\right)=\left(\frac{\sum_{i=1}^{n}\left(g_{2}\left(D_{i}, \theta_{2}\right)-\check{\mu}_{2}\left(X_{i}, \theta_{2}\right)\right)^{2} K\left(\frac{X_{i}}{h_{2, n}}\right) \delta_{i}^{ \pm}}{\sum_{i=1}^{n} K\left(\frac{X_{i}}{h_{2, n}^{0}}\right) \delta_{i}^{ \pm}}\right)^{1 / 2} .
+\end{aligned}
+\]
+
+The uniform consistency of \(\check{\mu}_{k}\left(x, \theta_{k}\right) \mathbb{1}\left\{|x| \leq h_{k, n}^{0}\right\}\) in \(\left(x, \theta_{k}\right)\) is implied by Lemma 7 with bandwidths \(h_{1, n}\left(\theta_{1}\right)=h_{2, n}\left(\theta_{2}\right)=h_{0, n}\) selected in Step 1 under \(r=s\). This further implies the uniform consistency of \(\hat{\sigma}_{k k}\) for \(k=1,2\).
+
+Step 3: We are now ready to derive a feasible version of the main bandwidths. Let
+
+\[
+h_{k, n}^{M S E}\left(\theta_{1} \mid s, v\right)=\left(\frac{2 v+1}{2 s+2-2 v} \frac{\hat{C}_{k, \theta_{k}, s, v}^{\prime}}{\hat{C}_{k, \theta_{k}, s, v}^{2}}\right)^{1 /(2 s+3)} n^{-1 /(2 s+3)}
+\]
+
+where \(C_{1, \theta_{1}, s, v}, C_{1, \theta_{1}, s, v}^{\prime}, C_{2, \theta_{2}, s, v}\) and \(C_{2, \theta_{2}, s, v}^{\prime}\) are replaced by their estimates:
+
+\[
+\begin{aligned}
+& \hat{C}_{1, \theta_{1}, s, v}=e_{v}^{\prime}\left[\frac{\left(\Gamma_{s}^{+}\right)^{-1} \Lambda_{s, s+1}^{+}}{(s+1)!} \check{\mu}_{s, 1}^{(s+1)}\left(0^{+}, \theta_{1}\right)-\frac{\left(\Gamma_{s}^{-}\right)^{-1} \Lambda_{s, s+1}^{-}}{(s+1)!} \check{\mu}_{s, 1}^{(s+1)}\left(0^{-}, \theta_{1}\right)\right], \\
+& \hat{C}_{1, \theta_{1}, s, v}^{\prime}=\frac{e_{v}^{\prime}\left[\hat{\sigma}_{11}\left(\theta_{1}, \theta_{1} \mid 0^{+}\right)\left(\Gamma_{s}^{+}\right)^{-1} \Psi_{s}^{+}\left(\Gamma_{s}^{+}\right)^{-1}+\hat{\sigma}_{11}\left(\theta_{1}, \theta_{1} \mid 0^{-}\right)\left(\Gamma_{s}^{-}\right)^{-1} \Psi_{s}^{-}\left(\Gamma_{s}^{-}\right)^{-1}\right] e_{v}}{\hat{f}_{X}(0)} \\
+& \hat{C}_{2, \theta_{2}, s, v}=e_{v}^{\prime}\left[\frac{\left(\Gamma_{s}^{+}\right)^{-1} \Lambda_{s, s+1}^{+}}{(s+1)!} \check{\mu}_{2}^{(s+1)}\left(0^{+}, \theta_{2}\right)-\frac{\left(\Gamma_{s}^{-}\right)^{-1} \Lambda_{s, s+1}^{-}}{(s+1)!} \check{\mu}_{2}^{(s+1)}\left(0^{-}, \theta_{2}\right)\right], \\
+& \hat{C}_{2, \theta_{2}, s, v}^{\prime}=\frac{e_{v}^{\prime}\left[\hat{\sigma}_{22}\left(\theta_{2}, \theta_{2} \mid 0^{+}\right)\left(\Gamma_{s}^{+}\right)^{-1} \Psi_{s}^{+}\left(\Gamma_{s}^{+}\right)^{-1}+\hat{\sigma}_{22}\left(\theta_{2}, \theta_{2} \mid 0^{-}\right)\left(\Gamma_{s}^{-}\right)^{-1} \Psi_{s}^{-}\left(\Gamma_{s}^{-}\right)^{-1}\right] e_{v}}{\hat{f}_{X}(0)},
+\end{aligned}
+\]
+
+respectively. To these feasible MSE-optimal choices, we further apply the rule of thumb (ROT) bandwidth algorithm for optimal coverage error following Calonico, Cattaneo, and Farrell (2016ab):
+
+\[
+\begin{aligned}
+& h_{1, n}^{R O T}\left(\theta_{1} \mid s, v\right)=h_{1, n}^{M S E}\left(\theta_{1} \mid s, v\right) n^{-s /(2 s+3)(s+3)}, \\
+& h_{2, n}^{R O T}\left(\theta_{2} \mid s, v\right)=h_{2, n}^{M S E}\left(\theta_{2} \mid s, v\right) n^{-s /(2 s+3)(s+3)} .
+\end{aligned}
+\]
+
+\section*{References}
+Calonico, Sebastian, Matias D. Cattaneo, and Max Farrell (2016a) "Coverage Error Optimal Confidence Intervals for Regression Discontinuity Designs." Working paper.
+
+Calonico, Sebastian, Matias D. Cattaneo, and Max Farrell (2016b) "On the Effect of Bias Estimation on Coverage Accuracy in Nonparametric Inference." Journal of the American Statistical Association, forthcoming.
+
+\section*{Supplementary Material}
+Calonico, Sebastian, Matias D. Cattaneo, and Rocio Titiunik (2014) "Robust Nonparametric Confidence Intervals for Regression Discontinuity Designs." Econometrica, Vol. 82, No. 6, pp. 2295-2326.
+
+Card, David, David S. Lee, Zhuan Pei, and Andrea Weber (2016) "Inference on Causal Effects in a Generalized Regression Kink Design." Econometrica, Vol. 83, No. 6, pp. 2453-2483.
+
+Chernozhukov, Victor and Iván Fernández-Val (2005) "Subsampling Inference on Quantile Regression Processes." Sankhya: The Indian Journal of Statistics, Vol. 67, No. 2, pp. 253-276.
+
+Chiang, Harold D. and Yuya Sasaki (2019) "Causal Inference by Quantile Regression Kink Designs." Journal of Econometrics, forthcoming.
+
+Giné, Evarist, and Armelle Guillou (2002) "Rates of Strong Uniform Consistency for Multivariate Kernel Density Estimators." Annales de l'Institut Henri Poincaré, Probabilités et Statistiques, Vol. 38, No. 6, pp. 907-921.
+
+Koenker, Roger and Zhijie Xiao (2002) "Inference on the Quantile Regression Process." Econometrica, Vol. 70, No. 4, pp.1583-1612.
+
+Kosorok, Michael R. (2008) Introduction to Empirical Processes and Semiparametric Inference. Springer.
+
+Lee, David S. (2008) "Randomized Experiments from Non-Random Selection in U.S. House Elections," Journal of Econometrics, Vol. 142, pp. 675-697.
+
+McFadden, Daniel (1989) "Testing for Stochastic Dominance," in Studies in the Economics of Uncertainty: In Honor of Josef Hadar, eds. by T. B. Fomby and T. K. Seo, Springer.
+
+Qu, Zhongjun and Jungmo Yoon (2015b) "Uniform Inference on Quantile Effects under Sharp Regression Discontinuity Designs." Working Paper, 2015.\\
+van der Vaart, Aad W. (1998) Asymptotic Statistics. Cambridge University Press.\\
+van der Vaart, Aad W. and Jon A. Wellner (1996) Weak Convergence and Empirical Processes. Springer-Verlag.
+
+\section*{Additional Tables}
+\section*{Supplementary Material}
+Table 2: Simulated acceptance probabilities for treatment nullity under the fuzzy RDD across alternative values of \(\beta_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\). The nominal acceptance probability is \(95 \%\).
+
+\begin{center}
+\begin{tabular}{c|c|cccc}
+\hline\hline
+\multicolumn{2}{c}{\(n\)} & \multicolumn{5}{c}{\(\beta_{1}\)} \\
+\cline { 2 - 6 }
+ & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 &  \\
+\hline
+1000 & 0.934 & 0.876 & 0.686 & 0.403 & 0.210 &  \\
+2000 & 0.956 & 0.846 & 0.516 & 0.230 & 0.090 &  \\
+4000 & 0.949 & 0.762 & 0.336 & 0.103 & 0.017 &  \\
+\hline\hline
+\end{tabular}
+\end{center}
+
+Table 3: Simulated acceptance probabilities for treatment nullity under the sharp RDD across alternative values of \(\beta_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\). The nominal acceptance probability is \(95 \%\).
+
+\begin{center}
+\begin{tabular}{c|c|cccc}
+\hline\hline
+\multicolumn{2}{c}{\(n\)} & \multicolumn{5}{c}{\(\beta_{1}\)} \\
+\cline { 2 - 6 }
+ & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 &  \\
+\hline
+1000 & 0.939 & 0.842 & 0.641 & 0.366 & 0.190 &  \\
+2000 & 0.949 & 0.812 & 0.481 & 0.204 & 0.075 &  \\
+4000 & 0.955 & 0.738 & 0.304 & 0.082 & 0.019 &  \\
+\hline\hline
+\end{tabular}
+\end{center}
+
+Table 4: Simulated coverage probabilities under the sharp RDD under the data generating processes used in Calonico, Cattaneo and Titiunik (2014). The nominal acceptance probability is \(95 \%\). FN stands for the fixed-neighborhood standard error estimators, PI stands for the plug-in residual standard error estimators, and MB stands for the multiplier bootstrap. The first four columns are copied from Table I of Calonico, Cattaneo and Titiunik (2014), whereas the last column is based on our simulations.
+
+\begin{center}
+\begin{tabular}{lccccccc}
+\hline\hline
+ & \multicolumn{2}{c}{Conventional} &  & \multicolumn{3}{c}{Robust} \\
+\cline { 2 - 3 }\cline { 5 - 7 }
+DGP & FN & PI & FN & PI & MB &  \\
+\hline
+Lee (2008) & 89.4 & 88.4 &  & 91.6 & 90.7 & 91.3 \\
+Ludwig and Miller (2007) & 87.3 & 80.8 &  & 93.2 & 90.5 & 90.9 \\
+\hline\hline
+\end{tabular}
+\end{center}
+
+\section*{Supplementary Material}
+Table 5: Simulated acceptance probabilities for treatment nullity under the fuzzy RKD across alternative values of \(\beta_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\). The nominal acceptance probability is \(95 \%\).
+
+\begin{center}
+\begin{tabular}{c|c|cccc}
+\hline\hline
+\multicolumn{2}{c}{\(n\)} & \multicolumn{5}{c}{\(\beta_{1}\)} \\
+\cline { 2 - 6 }
+ & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 &  \\
+\hline
+1000 & 0.913 & 0.864 & 0.760 & 0.642 & 0.554 &  \\
+2000 & 0.925 & 0.838 & 0.686 & 0.551 & 0.414 &  \\
+4000 & 0.936 & 0.786 & 0.588 & 0.419 & 0.290 &  \\
+\hline\hline
+\end{tabular}
+\end{center}
+
+Table 6: Simulated acceptance probabilities for treatment nullity under the sharp RKD across alternative values of \(\beta_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\). The nominal acceptance probability is \(95 \%\).
+
+\begin{center}
+\begin{tabular}{c|c|cccc}
+\hline\hline
+\multicolumn{2}{c}{\(n\)} & \multicolumn{5}{c}{\(\beta_{1}\)} \\
+\cline { 2 - 6 }
+ & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 &  \\
+\hline
+1000 & 0.914 & 0.843 & 0.731 & 0.598 & 0.469 &  \\
+2000 & 0.917 & 0.812 & 0.641 & 0.465 & 0.324 &  \\
+4000 & 0.932 & 0.772 & 0.516 & 0.348 & 0.194 &  \\
+\hline\hline
+\end{tabular}
+\end{center}
+
+\section*{Supplementary Material}
+Table 7: Simulated acceptance probabilities for (A) uniform treatment nullity and (B) treatment homogeneity under the sharp quantile RDD. The top panel (I) presents results across alternative values of \(\beta_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\gamma_{1}=0\). The bottom panel (II) presents results across alternative values of \(\gamma_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\beta_{1}=0\). The nominal acceptance probability is \(95 \%\).
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\multicolumn{6}{|c|}{(I) (A) Joint Treatment Nullity} & \multicolumn{6}{|c|}{(I) (B) Treatment Homogeneity} \\
+\hline
+\multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\beta_{1}\)} & \multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\beta_{1}\)} \\
+\hline
+ & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 &  & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 \\
+\hline
+1000 & 0.966 & 0.917 & 0.798 & 0.620 & 0.484 & 1000 & 0.967 & 0.967 & 0.965 & 0.954 & 0.963 \\
+\hline
+2000 & 0.959 & 0.859 & 0.633 & 0.414 & 0.269 & 2000 & 0.959 & 0.959 & 0.966 & 0.955 & 0.958 \\
+\hline
+4000 & 0.950 & 0.740 & 0.400 & 0.161 & 0.074 & 4000 & 0.950 & 0.946 & 0.958 & 0.948 & 0.947 \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\multicolumn{6}{|c|}{(II) (A) Joint Treatment Nullity} & \multicolumn{6}{|c|}{(II) (B) Treatment Homogeneity} \\
+\hline
+\multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\gamma_{1}\)} & \multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\gamma_{1}\)} \\
+\hline
+ & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 &  & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 \\
+\hline
+1000 & 0.966 & 0.928 & 0.842 & 0.742 & 0.647 & 1000 & 0.967 & 0.920 & 0.808 & 0.698 & 0.574 \\
+\hline
+2000 & 0.959 & 0.866 & 0.669 & 0.500 & 0.378 & 2000 & 0.959 & 0.855 & 0.625 & 0.446 & 0.327 \\
+\hline
+4000 & 0.950 & 0.718 & 0.362 & 0.206 & 0.138 & 4000 & 0.950 & 0.693 & 0.327 & 0.170 & 0.116 \\
+\hline
+\end{tabular}
+\end{center}
+
+\section*{Supplementary Material}
+Table 8: Simulated acceptance probabilities for (A) uniform treatment nullity and (B) treatment homogeneity under the fuzzy quantile RKD. The top panel (I) presents results across alternative values of \(\beta_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\gamma_{1}=0\). The bottom panel (II) presents results across alternative values of \(\gamma_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\beta_{1}=0\). The nominal acceptance probability is \(95 \%\).
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\multicolumn{6}{|c|}{(I) (A) Joint Treatment Nullity} & \multicolumn{6}{|c|}{(I) (B) Treatment Homogeneity} \\
+\hline
+\multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\beta_{1}\)} & \multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\beta_{1}\)} \\
+\hline
+ & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 &  & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 \\
+\hline
+1000 & 0.945 & 0.929 & 0.903 & 0.868 & 0.842 & 1000 & 0.938 & 0.942 & 0.945 & 0.946 & 0.936 \\
+\hline
+2000 & 0.941 & 0.911 & 0.873 & 0.836 & 0.815 & 2000 & 0.939 & 0.927 & 0.936 & 0.931 & 0.930 \\
+\hline
+4000 & 0.935 & 0.904 & 0.846 & 0.799 & 0.802 & 4000 & 0.929 & 0.928 & 0.935 & 0.931 & 0.929 \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\multicolumn{6}{|c|}{(II) (A) Joint Treatment Nullity} & \multicolumn{6}{|c|}{(II) (B) Treatment Homogeneity} \\
+\hline
+\multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\gamma_{1}\)} & \multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\gamma_{1}\)} \\
+\hline
+ & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 &  & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 \\
+\hline
+1000 & 0.945 & 0.956 & 0.950 & 0.952 & 0.928 & 1000 & 0.938 & 0.948 & 0.949 & 0.930 & 0.903 \\
+\hline
+2000 & 0.941 & 0.944 & 0.936 & 0.919 & 0.921 & 2000 & 0.939 & 0.938 & 0.914 & 0.890 & 0.872 \\
+\hline
+4000 & 0.935 & 0.941 & 0.928 & 0.905 & 0.888 & 4000 & 0.929 & 0.938 & 0.896 & 0.848 & 0.790 \\
+\hline
+\end{tabular}
+\end{center}
+
+\section*{Supplementary Material}
+Table 9: Simulated acceptance probabilities for (A) uniform treatment nullity and (B) treatment homogeneity under the sharp quantile RKD. The top panel (I) presents results across alternative values of \(\beta_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\gamma_{1}=0\). The bottom panel (II) presents results across alternative values of \(\gamma_{1} \in\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\beta_{1}=0\). The nominal acceptance probability is \(95 \%\).
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\multicolumn{6}{|c|}{(I) (A) Joint Treatment Nullity} & \multicolumn{6}{|c|}{(I) (B) Treatment Homogeneity} \\
+\hline
+\multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\beta_{1}\)} & \multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\beta_{1}\)} \\
+\hline
+ & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 &  & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 \\
+\hline
+1000 & 0.930 & 0.928 & 0.906 & 0.881 & 0.851 & 1000 & 0.927 & 0.936 & 0.945 & 0.936 & 0.940 \\
+\hline
+2000 & 0.941 & 0.917 & 0.883 & 0.850 & 0.837 & 2000 & 0.932 & 0.930 & 0.929 & 0.929 & 0.928 \\
+\hline
+4000 & 0.941 & 0.902 & 0.850 & 0.835 & 0.829 & 4000 & 0.929 & 0.930 & 0.918 & 0.936 & 0.924 \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\multicolumn{6}{|c|}{(II) (A) Joint Treatment Nullity} & \multicolumn{6}{|c|}{(II) (B) Treatment Homogeneity} \\
+\hline
+\multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\gamma_{1}\)} & \multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\gamma_{1}\)} \\
+\hline
+ & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 &  & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 \\
+\hline
+1000 & 0.930 & 0.954 & 0.955 & 0.943 & 0.936 & 1000 & 0.927 & 0.938 & 0.939 & 0.921 & 0.911 \\
+\hline
+2000 & 0.941 & 0.931 & 0.936 & 0.926 & 0.902 & 2000 & 0.932 & 0.932 & 0.923 & 0.901 & 0.875 \\
+\hline
+4000 & 0.941 & 0.931 & 0.928 & 0.905 & 0.879 & 4000 & 0.929 & 0.920 & 0.885 & 0.861 & 0.816 \\
+\hline
+\end{tabular}
+\end{center}
+
+\section*{Supplementary Material}
+Table 10: Simulated acceptance probabilities for (A) joint treatment nullity and (B) treatment homogeneity under the fuzzy RDD with group covariate across alternative values of \(\beta_{1} \in\) \(\{0.00,0.25,0.50,0.75,1.00\}\) while fixing \(\beta_{2}=0\). The nominal acceptance probability is \(95 \%\).
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\multicolumn{6}{|c|}{(A) Joint Treatment Nullity} & \multicolumn{6}{|c|}{(B) Treatment Homogeneity} \\
+\hline
+\multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\beta_{1}\)} & \multirow[t]{2}{*}{\(n\)} & \multicolumn{5}{|c|}{\(\beta_{1}\)} \\
+\hline
+ & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 &  & 0.00 & 0.25 & 0.50 & 0.75 & 1.00 \\
+\hline
+1000 & 0.980 & 0.971 & 0.957 & 0.940 & 0.885 & 1000 & 0.972 & 0.966 & 0.964 & 0.944 & 0.919 \\
+\hline
+2000 & 0.977 & 0.959 & 0.942 & 0.881 & 0.803 & 2000 & 0.971 & 0.964 & 0.951 & 0.913 & 0.867 \\
+\hline
+4000 & 0.972 & 0.959 & 0.902 & 0.786 & 0.601 & 4000 & 0.971 & 0.965 & 0.925 & 0.855 & 0.762 \\
+\hline
+\end{tabular}
+\end{center}
+
+
+\end{document}
