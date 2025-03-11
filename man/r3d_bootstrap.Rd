@@ -2,7 +2,7 @@
 % Please edit documentation in R/r3d_bootstrap.R
 \name{r3d_bootstrap}
 \alias{r3d_bootstrap}
-\title{r3d_bootstrap: multiplier draws re-using partial-sum intercept weights}
+\title{Multiplier Bootstrap for Distributional RDD}
 \usage{
 r3d_bootstrap(
   object,
@@ -18,39 +18,61 @@ r3d_bootstrap(
 )
 }
 \arguments{
-\item{object}{an S3 "r3d" from \code{\link{r3d}}}
+\item{object}{An S3 object of class \code{"r3d"}, typically the output of \code{\link{r3d}}.}
 
-\item{X}{numeric}
+\item{X}{Numeric vector of the running variable (the same one used in \code{\link{r3d}}).}
 
-\item{Y_list}{list}
+\item{Y_list}{A list of numeric vectors; each element in this list is the sample from the
+outcome distribution of one unit (same data passed to \code{\link{r3d}}).}
 
-\item{T}{optional numeric}
+\item{T}{(Optional) numeric or logical vector of treatment statuses for the fuzzy design;
+used only if the original \code{r3d} call was fuzzy. Otherwise, can be \code{NULL}.}
 
-\item{B}{integer: number of multiplier draws}
+\item{B}{Integer, number of bootstrap draws. Defaults to 200.}
 
-\item{alpha}{significance level}
+\item{alpha}{Significance level for uniform confidence bands. Defaults to 0.05.}
 
-\item{test}{either "none","nullity","homogeneity"}
+\item{test}{Character indicating which hypothesis test to conduct:
+\describe{
+\item{\code{"none"}}{No test, only compute confidence bands.}
+\item{\code{"nullity"}}{Tests the null \eqn{H_0: \tau(q) = 0 \text{ for all } q}.}
+\item{\code{"homogeneity"}}{Tests the null \eqn{H_0: \tau(q) \text{ is constant in } q}.}
+}}
 
-\item{cores}{number of CPU cores for parallel}
+\item{cores}{Number of CPU cores used for parallel computation of bootstrap draws (default 1).}
 
-\item{seed}{optional integer}
+\item{seed}{Optional integer to set a random seed for the multiplier draws (for reproducibility).}
 
-\item{...}{unused}
+\item{...}{Unused additional arguments (for compatibility).}
 }
 \value{
-A list with:
-\item{cb_lower, cb_upper}{uniform confidence band}
-\item{boot_taus}{the B bootstrap processes}
-\item{p_value}{test p-value, if test != "none"}
+A list with the elements:
+\describe{
+\item{\code{cb_lower}, \code{cb_upper}}{Numeric vectors giving the lower and upper
+uniform confidence bands at each quantile in \code{object$q_grid}.}
+\item{\code{boot_taus}}{A matrix of bootstrap-draw realizations of the entire \eqn{\tau(q)}.}
+\item{\code{supvals}}{For each bootstrap draw, the supremum (max) absolute deviation.}
+\item{\code{crit_val}}{The critical value (e.g., the \code{(1 - alpha)} quantile of \code{supvals}).}
+\item{\code{test_stat}, \code{test_crit_val}, \code{p_value}}{If \code{test != "none"},
+these store the test statistic, critical value, and a simple bootstrap-based p-value.}
+}
 }
 \description{
-Implements the multiplier bootstrap described in the paper for uniform inference.
+Performs a multiplier bootstrap to obtain uniform confidence bands
+and (optionally) conduct hypothesis tests for an \emph{R3D} or \emph{F3D} design.
+It reuses the partial-sum intercept weights and residuals from a fitted \code{r3d} object
+to avoid re-estimating local polynomial regressions within each bootstrap loop.
+}
+\details{
+This function implements the multiplier bootstrap approach for distributional RD:
+it draws i.i.d. normal multipliers \eqn{\xi_i}, re-scales the stored residual partial sums,
+and reconstructs approximate realizations of the limiting process.
+The maximum deviation across quantiles in each realization
+is then used to form uniform confidence bands and test statistics.
 
-The code reuses the "w_plus" / "w_minus" intercept weights from the main r3d() function
-so that we do not re-fit local polynomials. Also reuses "e1_mat" and "e2_mat" residuals
-for T if fuzzy=TRUE.
-
-The resulting uniform confidence band is built from
-\eqn{\max_{q} |(1) * (plus partial sum) - (minus partial sum)|}.
+For the fuzzy design, the ratio-based estimator is handled similarly, using
+the same partial-sum logic for the treatment variable.
+}
+\seealso{
+\code{\link{r3d}}, \code{\link{plot.r3d}}, \code{\link{summary.r3d}}
 }

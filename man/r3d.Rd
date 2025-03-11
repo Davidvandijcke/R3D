@@ -2,7 +2,7 @@
 % Please edit documentation in R/r3d_main.R
 \name{r3d}
 \alias{r3d}
-\title{Main function for R3D: Local polynomial regression at a cutoff for distributional RD}
+\title{Main Estimator for Distributional RD (R3D)}
 \usage{
 r3d(
   X,
@@ -11,9 +11,9 @@ r3d(
   cutoff = 0,
   method = c("simple", "frechet"),
   p = 2,
-  q_grid = seq(0.1, 0.9, 0.1),
+  q_grid = seq(0.01, 0.99, 0.01),
   fuzzy = FALSE,
-  kernel = function(u) pmax(0, 1 - abs(u)),
+  kernel_fun = c("epanechnikov", "triangular", "uniform"),
   s = 1,
   boot = FALSE,
   boot_reps = 200,
@@ -24,65 +24,100 @@ r3d(
 )
 }
 \arguments{
-\item{X}{Numeric vector of the running variable.}
+\item{X}{Numeric vector of running variable values (length \eqn{n}).}
 
-\item{Y_list}{List of numeric vectors representing each unit's outcome distribution.}
+\item{Y_list}{A list of length \eqn{n}, where each element is a numeric vector
+representing the sample from the outcome distribution of one unit.}
 
-\item{T}{Optional numeric vector (same length as X) for fuzzy RD.}
+\item{T}{(Optional) For a fuzzy design: numeric or logical vector of length \eqn{n}
+giving partial treatment status (0 or 1). If \code{fuzzy=FALSE}, this can be omitted.}
 
-\item{cutoff}{Numeric, default 0. The cutoff for RDD; assumes X is recentered.}
+\item{cutoff}{Numeric scalar: the threshold for treatment assignment. The design
+treats \eqn{X \ge cutoff} as above the cutoff.}
 
-\item{method}{Character, either "simple" for pointwise local polynomial, or "frechet" for Fréchet (L^2-projection).}
+\item{method}{Either \code{"simple"} or \code{"frechet"}:
+\describe{
+\item{\code{"simple"}}{Local polynomial regression is done \emph{pointwise} for each quantile,
+and then optionally rearranged to maintain monotonicity.}
+\item{\code{"frechet"}}{A global local Fréchet regression approach is done, projecting
+the entire curve onto quantile functions.}
+}}
 
-\item{p}{Integer polynomial order (typically 1 or 2).}
+\item{p}{Integer specifying the local polynomial order (e.g., 2 for local quadratic).}
 
-\item{q_grid}{Numeric vector of quantiles between 0 and 1.}
+\item{q_grid}{Numeric vector of quantiles at which to estimate the distributional treatment effect.}
 
-\item{fuzzy}{Logical, if TRUE performs fuzzy RD estimation.}
+\item{fuzzy}{Logical flag for fuzzy design. Default \code{FALSE} for a sharp design.}
 
-\item{kernel}{Function, kernel weight function (default triangular kernel).}
+\item{kernel_fun}{Name of the kernel function. Possible choices are
+\code{"epanechnikov"}, \code{"triangular"}, or \code{"uniform"}.
+Defaults to \code{"triangular"}.}
 
-\item{s}{Integer, expansion order for pilot bandwidth selection.}
+\item{s}{Integer expansion order in the pilot local polynomial step used for bandwidth
+selection. Defaults to 1.}
 
-\item{boot}{Logical, if TRUE performs multiplier bootstrap for uniform confidence bands.}
+\item{boot}{Logical. If \code{TRUE}, automatically runs \code{\link{r3d_bootstrap}}
+after estimation to produce uniform confidence bands and tests.}
 
-\item{boot_reps}{Integer, number of bootstrap replicates.}
+\item{boot_reps}{Integer, number of bootstrap draws if \code{boot=TRUE}.}
 
-\item{boot_cores}{Integer, number of CPU cores for bootstrap parallelization.}
+\item{boot_cores}{Number of CPU cores for parallelizing the bootstrap. Default 1.}
 
-\item{alpha}{Numeric, significance level for confidence bands.}
+\item{alpha}{Significance level for the uniform confidence bands. Default 0.05.}
 
-\item{test}{Character, type of test: "none", "nullity", or "homogeneity".}
+\item{test}{Either \code{"none"}, \code{"nullity"}, or \code{"homogeneity"} (see \code{\link{r3d_bootstrap}}).}
 
-\item{...}{Additional arguments (currently unused).}
+\item{...}{Additional arguments passed to the bandwidth selection function \code{\link{r3d_bwselect}}.}
 }
 \value{
-An S3 object of class \code{"r3d"} with elements:
+An S3 object of class \code{"r3d"}, containing (among others):
 \describe{
-\item{tau}{Vector of RD effects at each quantile.}
-\item{q_grid}{Quantile grid used.}
-\item{method}{Method used ("simple" or "frechet").}
-\item{fuzzy}{Logical indicating if fuzzy RD was performed.}
-\item{p}{Polynomial order.}
-\item{bandwidths}{Bandwidths used for estimation.}
-\item{alpha_plus, alpha_minus}{Local polynomial coefficients for each side.}
-\item{w_plus, w_minus}{Intercept weights for bootstrap.}
-\item{e1_mat, e2_mat}{First-stage residual matrices.}
-\item{call}{Original function call.}
+\item{\code{tau}}{Estimated distributional treatment effect \eqn{\tau(q)} for each \eqn{q} in \code{q_grid}.}
+\item{\code{q_grid}}{The quantile grid used.}
+\item{\code{bandwidths}}{The MSE- or IMSE-optimal bandwidth(s).}
+\item{\code{w_plus}, \code{w_minus}}{The internal local polynomial weights on the plus/minus side.}
+\item{\code{e1_mat}, \code{e2_mat}}{Residual matrices used for the multiplier bootstrap.}
+\item{\code{boot_out}}{If \code{boot=TRUE}, a list of bootstrap results from \code{\link{r3d_bootstrap}}.}
 }
 }
 \description{
-Implements local polynomial regression at the cutoff (default at X=0) for regression discontinuity designs (RDD)
-involving distributional outcomes (quantile functions). Supports simple and Fréchet regression methods, fuzzy designs,
-and bootstrap-based inference.
+Fits a regression discontinuity design with \emph{distributional} outcomes (random distributions)
+using local polynomial regression on quantiles (\code{method="simple"}) or local Fréchet regression
+(\code{method="frechet"}). Supports both sharp and fuzzy designs.
 }
 \details{
-The function first selects bandwidths via \code{r3d_bwselect()}, then for each quantile grid point,
-calls the compiled Fortran subroutine \code{locweights} for local polynomial regression.
+This is the main user-facing function for the R3D approach. Internally, it:
+\enumerate{
+\item Selects bandwidth(s) via \code{\link{r3d_bwselect}},
+\item Computes local polynomial fits on each side of the cutoff for each quantile in \code{q_grid},
+\item For \code{method="frechet"}, performs a projection of the fitted quantile curves onto the
+space of valid quantile functions (via isotonic regression),
+\item (Optionally) runs the multiplier bootstrap for uniform inference.
+}
+}
+\examples{
+\dontrun{
+  # Simulate data
+  set.seed(123)
+  n <- 100
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(seq_len(n), function(i) {
+    # Suppose distribution is Normal with mean depending on X
+    rnorm(sample(30:50,1), mean=2 + 2*(X[i]>=0))
+  })
+  T <- as.numeric(X >= 0) * rbinom(n, 1, 0.8)  # Fuzzy treatment
 
-If \code{fuzzy = TRUE}, the function performs fuzzy RD by calculating ratios of RD effects.
+  fit <- r3d(X, Y_list, T=T, cutoff=0,
+             method="frechet", p=2, fuzzy=TRUE,
+             boot=TRUE, boot_reps=200, alpha=0.05, test="nullity")
 
-If \code{method = "frechet"}, the final RD effect across quantiles is rearranged monotonically.
+  # Inspect results
+  print(fit)
+  summary(fit)
+  plot(fit)
+}
 
-If bootstrap is requested (\code{boot=TRUE}), \code{r3d_bootstrap()} computes uniform confidence bands.
+}
+\seealso{
+\code{\link{r3d_bootstrap}}, \code{\link{plot.r3d}}, \code{\link{summary.r3d}}
 }

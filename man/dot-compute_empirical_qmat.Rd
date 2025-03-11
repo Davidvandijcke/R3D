@@ -2,14 +2,21 @@
 % Please edit documentation in R/r3d_utils.R
 \name{.compute_empirical_qmat}
 \alias{.compute_empirical_qmat}
-\title{Internal Utilities for R3D}
+\title{Compute Empirical Quantiles for Each Unit}
 \usage{
 .compute_empirical_qmat(Y_list, q_grid)
 }
-\description{
-\itemize{
-\item .compute_empirical_qmat: convert Y_list into a matrix of quantiles
-\item ...
+\arguments{
+\item{Y_list}{A list of numeric vectors, each giving observed samples from one unit's distribution.}
+
+\item{q_grid}{A numeric vector of quantiles, e.g. \code{seq(0.01, 0.99, 0.01)}.}
 }
+\value{
+A numeric matrix of dimension \code{length(Y_list)} \eqn{\times} \code{length(q_grid)}.
+Row \eqn{i} is \eqn{(\hat{Q}_{Y_i}(q_1), \ldots, \hat{Q}_{Y_i}(q_m))}.
+}
+\description{
+\strong{Internal function.} Constructs a matrix of empirical quantiles for a list of distributions.
+Each row corresponds to one unit's distribution, and each column a quantile in \code{q_grid}.
 }
 \keyword{internal}

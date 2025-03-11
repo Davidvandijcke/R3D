@@ -2,17 +2,46 @@
 % Please edit documentation in R/r3d_methods.R
 \name{summary.r3d}
 \alias{summary.r3d}
-\title{Summary method for r3d objects}
+\title{Summarize an r3d Object}
 \usage{
 \method{summary}{r3d}(object, samples = c(0.25, 0.5, 0.75), ...)
 }
 \arguments{
-\item{object}{an r3d object}
+\item{object}{An \code{r3d} object produced by \code{\link{r3d}}.}
 
-\item{samples}{numeric vector of quantile sub-ranges for aggregated summary. Defaults c(0.25, 0.5, 0.75).}
+\item{samples}{A numeric vector of quantile cut-points at which to display aggregated
+effects. Defaults to \code{c(0.25,0.5,0.75)}. Used only for convenient partial summaries.}
 
-\item{...}{not used}
+\item{...}{Additional arguments (not used).}
+}
+\value{
+The \code{object} is returned invisibly. This function is primarily for printing.
 }
 \description{
-prints basic info, bandwidths, and possibly aggregated distribution effects
+Displays a summary of the local polynomial (or Fréchet) regression discontinuity model
+fitted by \code{\link{r3d}}. Includes basic information about the method, polynomial order,
+fuzzy vs. sharp design, sample size, bandwidth choice(s), and a numeric summary of
+the estimated distributional treatment effect \eqn{\tau(q)}.
+If bootstrap inference was performed, also reports uniform confidence bands
+and test results.
+}
+\details{
+By default, prints:
+\itemize{
+\item The call used to create the \code{r3d} object,
+\item Basic setup and bandwidth details,
+\item A table of \eqn{\tau(q)} for all quantiles in \code{object$q_grid},
+\item If available, uniform confidence bands and test statistics from the bootstrap,
+\item Optionally, average effects on sub-ranges of \eqn{q}.
+}
+}
+\examples{
+\dontrun{
+  fit <- r3d(X, Y_list, boot=TRUE)
+  summary(fit, samples=c(0.25, 0.75))
+}
+
+}
+\seealso{
+\code{\link{r3d}}, \code{\link{plot.r3d}}, \code{\link{print.r3d}}
 }

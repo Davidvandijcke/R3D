@@ -2,40 +2,78 @@
 % Please edit documentation in R/r3d_bwselect.R
 \name{r3d_bwselect}
 \alias{r3d_bwselect}
-\title{r3d_bwselect: complete 3-step bandwidth selection}
+\title{Bandwidth Selection for Distributional RDD}
 \usage{
 r3d_bwselect(
   X,
   Y_list,
+  T = NULL,
   q_grid = seq(0.1, 0.9, 0.1),
   method = c("simple", "frechet"),
   s = 1,
   p = 2,
   kernel = function(u) pmax(0, 1 - abs(u)),
+  cutoff = 0,
+  fuzzy = FALSE,
   ...
 )
 }
 \arguments{
-\item{X}{numeric}
+\item{X}{Numeric vector of the running variable.}
 
-\item{Y_list}{list of distribution draws}
+\item{Y_list}{A list of numeric vectors; each entry is the sample of outcomes
+from one unit's distribution.}
 
-\item{q_grid}{quantiles}
+\item{T}{(Optional) Numeric or logical vector of treatment statuses for fuzzy design.}
 
-\item{method}{"simple" => MSE, "frechet" => IMSE}
+\item{q_grid}{Numeric vector of quantiles at which local polynomial fits are performed.}
 
-\item{s}{expansions order in pilot}
+\item{method}{Either \code{"simple"} (per-quantile MSE-optimal) or
+\code{"frechet"} (single IMSE-optimal bandwidth).}
 
-\item{p}{final polynomial order}
+\item{s}{Integer specifying the order of local polynomial in the pilot stage (often 1).}
 
-\item{kernel}{kernel function}
+\item{p}{Integer specifying the final local polynomial order (often 2).}
 
-\item{...}{}
+\item{kernel}{Kernel function for local weighting. Defaults to triangular kernel.}
+
+\item{cutoff}{Numeric scalar threshold. Data are recentered so \code{X - cutoff} has cutoff at 0.}
+
+\item{fuzzy}{Logical indicating fuzzy design. Default is FALSE.}
+
+\item{...}{Additional arguments for future expansions.}
 }
 \value{
-a list with final $h_star => either length(q_grid) or single numeric
+A list with elements:
+\describe{
+\item{\code{method}}{Method used: \code{"simple"} or \code{"frechet"}.}
+\item{\code{q_grid}}{Input \code{q_grid}.}
+\item{\code{h_star_num}}{Bandwidth(s) for numerator (outcome).}
+\item{\code{h_star_den}}{Bandwidth for denominator (treatment, if fuzzy).}
+\item{\code{pilot_h_num}}{Pilot bandwidth(s) for numerator.}
+\item{\code{pilot_h_den}}{Pilot bandwidth for denominator (if fuzzy).}
+\item{\code{s}, \code{p}}{Polynomial orders.}
+\item{\code{B_plus}, \code{B_minus}}{Bias estimates for numerator.}
+\item{\code{V_plus}, \code{V_minus}}{Variance estimates for numerator.}
+\item{\code{f_X_hat}}{Estimated density of \( X \) at cutoff.}
+}
 }
 \description{
-Implements your appended text's method: pilot expansions (order >= s+1),
-derive bias+variance, then compute final MSE (per-q) or IMSE (single).
+Computes bandwidth(s) for local polynomial estimation in a regression discontinuity
+setting with distributional (Fréchet-valued) outcomes. Implements a three-step pilot
+procedure to find either MSE-optimal (per-quantile) bandwidths or a single IMSE-optimal
+bandwidth, depending on \code{method}.
+}
+\details{
+Implements a three-step procedure:
+\enumerate{
+\item Estimates \( f_X(0) \) using Silverman’s rule and computes pilot bandwidths via global polynomials.
+\item Runs pilot local polynomial regressions to estimate bias and variance.
+\item Computes MSE-optimal (per-quantile) or IMSE-optimal (single) bandwidths.
+}
+In fuzzy RDD, separate bandwidths are computed for the numerator (outcome) and denominator (treatment).
+}
+\references{
+Van Dijcke, D. (2025). \emph{Regression Discontinuity Design with Distributional Outcomes (R3D)}.
+Working paper.
 }

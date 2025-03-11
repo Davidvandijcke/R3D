@@ -1,68 +1,35 @@
-#' @title r3d_bootstrap: Multiplier Bootstrap for Uniform Inference
+#' Summarize an r3d Object
 #'
-#' @description
-#' Performs a multiplier bootstrap to obtain uniform confidence bands 
-#' and conduct hypothesis tests in \emph{distributional} RD settings. 
-#' Reuses the partial-sum intercept weights and residuals from a fitted \code{r3d} object,
-#' thus avoiding recomputing local polynomial regressions inside the bootstrap loop.
+#' Displays a summary of the local polynomial (or Fréchet) regression discontinuity model
+#' fitted by \code{\link{r3d}}. Includes basic information about the method, polynomial order,
+#' fuzzy vs. sharp design, sample size, bandwidth choice(s), and a numeric summary of
+#' the estimated distributional treatment effect \eqn{\tau(q)}.
+#' If bootstrap inference was performed, also reports uniform confidence bands
+#' and test results.
 #'
-#' @param object An S3 object of class \code{"r3d"}, typically the output of \code{\link{r3d}}.
-#' @param X Numeric vector (same as in the original call).
-#' @param Y_list List of numeric vectors (same as in the original call).
-#' @param T (Optional) numeric or logical vector for the fuzzy design; same data used in the original \code{r3d} call.
-#' @param B Integer, number of bootstrap draws (default 200).
-#' @param alpha Significance level for uniform confidence bands (default 0.05).
-#' @param test Character, either \code{"none"}, \code{"nullity"}, or \code{"homogeneity"}. 
-#'   \itemize{
-#'     \item \code{"none"}: no test, just compute confidence bands.
-#'     \item \code{"nullity"}: test the null that \eqn{\tau(q) = 0} for all \eqn{q}.
-#'     \item \code{"homogeneity"}: test the null that \eqn{\tau(q)} is constant across \eqn{q}.
-#'   }
-#' @param cores Number of CPU cores for parallel computing of bootstrap draws (default 1).
-#' @param seed Optional integer to set random seed for the multiplier draws.
-#' @param ... Unused additional arguments.
+#' @param object An \code{r3d} object produced by \code{\link{r3d}}.
+#' @param samples A numeric vector of quantile cut-points at which to display aggregated
+#'   effects. Defaults to \code{c(0.25,0.5,0.75)}. Used only for convenient partial summaries.
+#' @param ... Additional arguments (not used).
 #'
 #' @details
-#' \bold{Approach}:
-#' A multiplier bootstrap draws i.i.d. normal multipliers \eqn{\xi_i}, 
-#' and re-scales the residual partial sums to generate approximate realizations 
-#' of the limiting process. See the references for theoretical details.
-#'
-#' The resulting object can be used to construct uniform confidence bands and test statistics.
-#'
-#' \bold{Tests}:
-#' \describe{
-#'   \item{\code{test = "nullity"}}{Tests \eqn{H_0: \tau(q)=0~\forall q} vs. \eqn{H_a: \tau(q)\neq 0} for some \eqn{q}.}
-#'   \item{\code{test = "homogeneity"}}{Tests \eqn{H_0: \tau(q) ~\text{is constant in}~ q} vs. \eqn{H_a: \tau(q) \text{ not constant}.}
+#' By default, prints:
+#' \itemize{
+#'   \item The call used to create the \code{r3d} object,
+#'   \item Basic setup and bandwidth details,
+#'   \item A table of \eqn{\tau(q)} for all quantiles in \code{object$q_grid},
+#'   \item If available, uniform confidence bands and test statistics from the bootstrap,
+#'   \item Optionally, average effects on sub-ranges of \eqn{q}.
 #' }
 #'
-#' @return A list with components:
-#' \item{cb_lower, cb_upper}{Numeric vectors of lower/upper confidence band values, same length as \code{object$q_grid}.}
-#' \item{boot_taus}{A matrix of the B bootstrap draws of the entire \eqn{\tau(q)} function. 
-#'    (Rows or columns, depending on your internal structure.)}
-#' \item{supvals}{For each bootstrap sample, the max absolute deviation from the point estimate.}
-#' \item{crit_val}{The critical value for the uniform band, e.g. the (1-\code{alpha}) quantile of \code{supvals}.}
-#' \item{test_stat, test_crit_val, p_value}{If \code{test != "none"}, these store the chosen test statistic, 
-#'    the critical value, and the resulting p-value.}
+#' @return The \code{object} is returned invisibly. This function is primarily for printing.
 #'
-#' @references
-#' Van Dijcke, D. (2025). \emph{Regression Discontinuity Design with Distributional Outcomes (R3D).} 
-#' Working paper. 
-#' \cr
-#' \cite{chiang2019robust}, \cite{calonico2014robust}, among others, discuss multiplier bootstraps in RD contexts.
-#'
-#' @seealso 
-#' \code{\link{r3d}}, \code{\link{plot.r3d}}, \code{\link{summary.r3d}}
+#' @seealso \code{\link{r3d}}, \code{\link{plot.r3d}}, \code{\link{print.r3d}}
 #'
 #' @examples
 #' \dontrun{
-#'   # Suppose you already fit r3d:
-#'   fit <- r3d(X, Y_list, boot=FALSE)  # no bootstrap initially
-#'   
-#'   # Then post hoc, you can run:
-#'   bootout <- r3d_bootstrap(fit, X, Y_list, B=300, alpha=0.05, test="homogeneity")
-#'   names(bootout)
-#'   # you get cb_lower, cb_upper, etc.
+#'   fit <- r3d(X, Y_list, boot=TRUE)
+#'   summary(fit, samples=c(0.25, 0.75))
 #' }
 #'
 #' @export
@@ -77,8 +44,8 @@ summary.r3d <- function(object, samples=c(0.25,0.5,0.75), ...) {
   cat("Bandwidth(s):\n")
   if(object$method=="simple") {
     cat(" Per-quantile MSE. Range:", 
-        round(min(object$bandwidths, na.rm=TRUE), 4), "to", 
-        round(max(object$bandwidths, na.rm=TRUE), 4), "\n")
+        round(min(unlist(object$bandwidths), na.rm=TRUE), 4), "to", 
+        round(max(unlist(object$bandwidths), na.rm=TRUE), 4), "\n")
   } else {
     cat(" Single IMSE bandwidth:", round(object$results$h_used, 4),"\n")
   }
@@ -167,29 +134,29 @@ summary.r3d <- function(object, samples=c(0.25,0.5,0.75), ...) {
 # Helper for summary method
 `%||%` <- function(x, y) if(is.null(x)) y else x
 
-#' @title Plot Method for r3d Objects
+#' Plot an r3d Object
 #'
-#' @description
-#' Plots the estimated distributional RD effects, \eqn{\tau(q)} versus \eqn{q}, 
-#' optionally with uniform confidence bands (if available).
+#' Produces a simple plot of the estimated distributional RD effect \eqn{\tau(q)} as a function
+#' of the quantile \eqn{q}, optionally with uniform confidence bands if they are available in
+#' the fitted \code{r3d} object.
 #'
 #' @param x An \code{r3d} object from \code{\link{r3d}}.
-#' @param main Main title for the plot.
-#' @param xlab X-axis label (defaults to "Quantile").
-#' @param ylab Y-axis label (defaults to "Treatment Effect").
-#' @param col Color for the main line (defaults to "blue").
-#' @param lwd Line width for the main line (defaults to 1.5).
-#' @param ci_col Color for confidence-band lines (defaults to "gray").
-#' @param ci_lty Line type for confidence-band lines (defaults to 2).
-#' @param ref_line Logical, if \code{TRUE}, draws a horizontal reference line at 0.
-#' @param ... Additional arguments passed to \code{\link[graphics]{plot}}.
+#' @param main An overall title for the plot. If \code{NULL}, a default title is constructed.
+#' @param xlab Label of the x-axis, defaults to \code{"Quantile"}.
+#' @param ylab Label of the y-axis, defaults to \code{"Treatment Effect"}.
+#' @param col Color for the main line. Defaults to \code{"blue"}.
+#' @param lwd Line width for the main curve. Defaults to 1.5.
+#' @param ci_col Color for the confidence-band boundaries. Defaults to \code{"gray"}.
+#' @param ci_lty Line type for the confidence-band boundaries. Defaults to 2 (dashed).
+#' @param ref_line Logical indicating whether to draw a horizontal reference line at 0. Default \code{TRUE}.
+#' @param ... Additional plotting parameters passed to \code{\link[graphics]{plot}}.
 #'
 #' @details
-#' This plots the function \eqn{\tau(q)} stored in \code{x$tau} across the grid \code{x$q_grid}. 
-#' If \code{x$boot_out} is non-null and includes \code{cb_lower, cb_upper}, 
-#' then those uniform confidence bands are overlaid.
+#' If bootstrap inference was performed (\code{boot=TRUE} in \code{\link{r3d}}), the object
+#' contains \code{cb_lower} and \code{cb_upper} for uniform confidence bands.
+#' These bands are added to the plot if available.
 #'
-#' @return Invisibly returns \code{x}. Called for its side effects (plot).
+#' @return Returns the \code{x} object invisibly.
 #'
 #' @seealso \code{\link{r3d}}, \code{\link{summary.r3d}}
 #'
@@ -200,7 +167,7 @@ summary.r3d <- function(object, samples=c(0.25,0.5,0.75), ...) {
 #' }
 #'
 #' @export
-plot.r3d <- function(x, main=NULL, xlab="Quantile", ylab="Treatment Effect", 
+plot.r3d <- function(x, main=NULL, ylim=NULL, xlab="Quantile", ylab="Treatment Effect", 
                      col="blue", lwd=1.5, ci_col="gray", ci_lty=2, 
                      ref_line=TRUE, ...) {
   obj <- x
@@ -211,19 +178,24 @@ plot.r3d <- function(x, main=NULL, xlab="Quantile", ylab="Treatment Effect",
                    ifelse(obj$fuzzy, "Fuzzy", "Sharp"), ", ", 
                    obj$method, ")")
   }
-  
-  # Create plot with sensible y-axis limits
   if(!is.null(obj$boot_out)) {
     cb_l <- obj$boot_out$cb_lower
     cb_u <- obj$boot_out$cb_upper
-    ylim <- range(c(tau, cb_l, cb_u), na.rm=TRUE)
-  } else {
-    ylim <- range(tau, na.rm=TRUE)
   }
   
-  # Add small margin to y-limits
-  y_margin <- 0.1 * diff(ylim)
-  ylim <- ylim + c(-y_margin, y_margin)
+  # Create plot with sensible y-axis limits
+  if (is.null(ylim)) { 
+    if (!is.null(obj$boot_out)) {
+      ylim <- range(c(tau, cb_l, cb_u), na.rm=TRUE)
+    } else {
+      ylim <- range(tau, na.rm=TRUE)
+    }
+    
+    # Add small margin to y-limits
+    y_margin <- 0.1 * diff(ylim)
+    ylim <- ylim + c(-y_margin, y_margin)
+  }
+
   
   # Create the plot
   plot(qq, tau, type="l", main=main, xlab=xlab, ylab=ylab, 
@@ -247,29 +219,27 @@ plot.r3d <- function(x, main=NULL, xlab="Quantile", ylab="Treatment Effect",
   invisible(x)
 }
 
-#' @title Print Method for r3d Objects
+#' Print Method for r3d Objects
 #'
-#' @description
-#' Provides a concise printed display for \code{r3d} objects. 
-#' Shows the method (sharp/fuzzy, polynomial order, sample size, whether bootstrap was used, etc.), 
-#' plus a short numeric summary of the estimated treatment effect \code{tau}.
+#' Gives a concise overview of an \code{r3d} object's main properties, including the design type
+#' (sharp or fuzzy), local polynomial order, sample size, and bandwidth choice. It also shows
+#' a numeric summary (min, median, max) of the estimated distributional RD effect \eqn{\tau(q)}.
 #'
-#' @param x An \code{r3d} object from \code{\link{r3d}}.
-#' @param ... Additional parameters (not used).
+#' @param x An \code{r3d} object returned by \code{\link{r3d}}.
+#' @param ... Additional arguments (not used).
 #'
 #' @details
-#' If you need a more detailed summary, use \code{\link{summary.r3d}}.
+#' This function is invoked automatically when an \code{r3d} object is printed on the console,
+#' e.g., simply by typing its name. For a more detailed summary, use \code{\link{summary.r3d}}.
 #'
-#' @seealso 
-#' \code{\link{r3d}}, \code{\link{summary.r3d}}, \code{\link{plot.r3d}}
+#' @return Returns the \code{x} object invisibly.
 #'
 #' @examples
 #' \dontrun{
-#'   fit <- r3d(X, Y_list)
+#'   fit <- r3d(X, Y_list, boot=TRUE)
 #'   print(fit)
 #' }
 #'
-#' @return Invisibly returns \code{x}.
 #' @export
 print.r3d <- function(x, ...) {
   cat("R3D: Regression Discontinuity with Distributional Outcomes\n")

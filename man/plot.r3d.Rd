@@ -2,21 +2,63 @@
 % Please edit documentation in R/r3d_methods.R
 \name{plot.r3d}
 \alias{plot.r3d}
-\title{Plot method for r3d objects}
+\title{Plot an r3d Object}
 \usage{
-\method{plot}{r3d}(x, main = NULL, xlab = "Quantile", ylab = "Treatment Effect", ...)
+\method{plot}{r3d}(
+  x,
+  main = NULL,
+  ylim = NULL,
+  xlab = "Quantile",
+  ylab = "Treatment Effect",
+  col = "blue",
+  lwd = 1.5,
+  ci_col = "gray",
+  ci_lty = 2,
+  ref_line = TRUE,
+  ...
+)
 }
 \arguments{
-\item{x}{r3d object}
+\item{x}{An \code{r3d} object from \code{\link{r3d}}.}
 
-\item{main}{Title}
+\item{main}{An overall title for the plot. If \code{NULL}, a default title is constructed.}
 
-\item{xlab}{x label}
+\item{xlab}{Label of the x-axis, defaults to \code{"Quantile"}.}
 
-\item{ylab}{y label}
+\item{ylab}{Label of the y-axis, defaults to \code{"Treatment Effect"}.}
 
-\item{...}{not used}
+\item{col}{Color for the main line. Defaults to \code{"blue"}.}
+
+\item{lwd}{Line width for the main curve. Defaults to 1.5.}
+
+\item{ci_col}{Color for the confidence-band boundaries. Defaults to \code{"gray"}.}
+
+\item{ci_lty}{Line type for the confidence-band boundaries. Defaults to 2 (dashed).}
+
+\item{ref_line}{Logical indicating whether to draw a horizontal reference line at 0. Default \code{TRUE}.}
+
+\item{...}{Additional plotting parameters passed to \code{\link[graphics]{plot}}.}
+}
+\value{
+Returns the \code{x} object invisibly.
 }
 \description{
-Plots \tau(q) vs q with optional confidence bands
+Produces a simple plot of the estimated distributional RD effect \eqn{\tau(q)} as a function
+of the quantile \eqn{q}, optionally with uniform confidence bands if they are available in
+the fitted \code{r3d} object.
+}
+\details{
+If bootstrap inference was performed (\code{boot=TRUE} in \code{\link{r3d}}), the object
+contains \code{cb_lower} and \code{cb_upper} for uniform confidence bands.
+These bands are added to the plot if available.
+}
+\examples{
+\dontrun{
+  fit <- r3d(X, Y_list, boot=TRUE)
+  plot(fit, main="Distributional RD Effects", ref_line=TRUE)
+}
+
+}
+\seealso{
+\code{\link{r3d}}, \code{\link{summary.r3d}}
 }
