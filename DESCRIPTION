@@ -4,18 +4,19 @@ Title: Regression Discontinuity with Distributional Outcomes
 Version: 0.1.0
 Authors@R: c(
     person("David", "Van Dijcke", email = "dvdijcke@umich.edu", 
-           role = c("aut", "cre"))
-)
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-5825-3447"))
+    )
 Description: Implements two estimators for regression discontinuities with 
-  distributional outcomes (R3D), a local polynomial estimator and a Fréchet 
-  regression estimator, along with multiplier bootstrap confidence intervals, 
-  as in Van Dijcke (2025).
+    distributional outcomes (R3D): a local polynomial estimator and a Fréchet 
+    regression estimator, along with multiplier bootstrap confidence intervals, 
+    as described in Van Dijcke (2025).
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Depends: R (>= 4.0.0)
-Imports: stats
-Suggests: isoreg, 
+Imports: stats, parallel
+Suggests: 
     testthat

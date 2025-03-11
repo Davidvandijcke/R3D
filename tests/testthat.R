@@ -12,4 +12,4 @@ library(drdd)
 options(datatable.auto.thread = 1)  # Limit data.table to 1 thread
 Sys.setenv(OMP_NUM_THREADS = 1) # limit environment to 1 thread
 
-test_check("drdd")
+test_check("r3d")

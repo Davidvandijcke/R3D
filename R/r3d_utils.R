@@ -1,54 +1,81 @@
 # File: R3D/R/r3d_utils.R
 
-#' @title Internal Utilities for R3D
-#' @description
-#'  - .compute_empirical_qmat: convert Y_list into a matrix of quantiles
-#'  - ...
+#' Internal function to compute empirical quantile matrix
+#' 
+#' @param Y_list List of numeric vectors representing distributions
+#' @param q_grid Vector of quantiles to compute
+#' @return Matrix with each row containing quantiles for one unit
 #' @keywords internal
-
 .compute_empirical_qmat <- function(Y_list, q_grid) {
-  lapply(Y_list, function(y) stats::quantile(y, probs=q_grid, type=7, na.rm=TRUE))
+  n <- length(Y_list)
+  nQ <- length(q_grid)
+  Qmat <- matrix(NA, nrow=n, ncol=nQ)
+  
+  for(i in seq_len(n)) {
+    y_i <- Y_list[[i]]
+    if(length(y_i) == 0) {
+      warning("Empty Y_list entry at index ", i)
+      Qmat[i,] <- NA
+    } else {
+      Qmat[i,] <- stats::quantile(y_i, probs=q_grid, na.rm=TRUE)
+    }
+  }
+  
+  return(Qmat)
 }
 
 
-#' @title mclapply.hack
-#' @description This function mimics forking (mclapply) also for Windows.
-#' @param ... arguments as for lapply
-#' @param verbose bool
-#' @param mc.cores integer number of cores
+# File: R3D/R/utils.R
+
+
+#' @title Internal: Cross-Platform Parallel mclapply Hack
+#'
+#' @description
+#' A wrapper around \code{\link[parallel]{mclapply}} that uses \code{parLapply} on Windows. 
+#' If \code{mc.cores=1} or the parallel package is unavailable, 
+#' it falls back to a simple \code{\link{lapply}} call.
+#'
+#' @param X A vector (list) to iterate over.
+#' @param FUN The function to apply to each element of \code{X}.
+#' @param mc.cores Integer, number of cores to use.
+#' @param ... Additional arguments to FUN.
+#'
+#' @details
+#' Internal convenience function to unify parallel calls across different OS. 
+#' 
+#' @return A list of the same length as \code{X}, each element the result of \code{FUN}.
 #' @keywords internal
-mclapply.hack <- function(..., verbose=FALSE, mc.cores=1) {
-  if (mc.cores == 1) {
-    return(lapply(...))
+#' @noRd
+mclapply.hack <- function(X, FUN, mc.cores = 1, ...) {
+  if(mc.cores <= 1 || !requireNamespace("parallel", quietly = TRUE)) {
+    # Sequential processing
+    return(lapply(X, FUN, ...))
   }
   
-  if (Sys.info()[['sysname']] == 'Windows') {
-    # Windows => parLapply
-    if (is.null(mc.cores)) {
-      size.of.list <- length(list(...)[[1]])
-      mc.cores <- min(size.of.list, parallel::detectCores())
-    }
-    cl <- parallel::makeCluster(mc.cores, outfile="")
-    on.exit(parallel::stopCluster(cl), add=TRUE)
-    
-    # Copy environment
-    this.env <- environment()
-    while (!identical(this.env, globalenv())) {
-      parallel::clusterExport(cl, ls(all.names=TRUE, envir=this.env), envir=this.env)
-      this.env <- parent.env(this.env)
-    }
-    parallel::clusterExport(cl, ls(all.names=TRUE, envir=globalenv()), envir=globalenv())
-    
-    # Load packages on clusters if needed ...
-    # run parLapply
-    out <- parallel::parLapply(cl, ...)
-    
-    if (verbose) {
-      message("mclapply.hack: running on Windows with parLapply")
-    }
-    out
+  # Check OS and use appropriate parallel method
+  if(.Platform$OS.type == "windows") {
+    # On Windows: use parLapply with explicit cluster creation
+    cl <- parallel::makeCluster(mc.cores)
+    on.exit(parallel::stopCluster(cl))
+    return(parallel::parLapply(cl, X, FUN, ...))
   } else {
-    # Non-windows => real mclapply
-    parallel::mclapply(..., mc.cores=mc.cores)
+    # On Unix-like systems: use mclapply
+    return(parallel::mclapply(X, FUN, mc.cores = mc.cores, ...))
   }
+}
+
+#' @title Internal: Dot Product Helper
+#'
+#' @description 
+#' Computes the dot product of two vectors efficiently, ignoring \code{NA} values.
+#'
+#' @param x A numeric vector.
+#' @param y A numeric vector of the same length as \code{x}.
+#'
+#' @return A scalar, the sum of elementwise products of \code{x} and \code{y}.
+#'
+#' @keywords internal
+#' @noRd
+.dot_product <- function(x, y) {
+  sum(x * y, na.rm = TRUE)
 }

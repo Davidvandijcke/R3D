@@ -1,144 +1,205 @@
 # File: R3D/R/r3d_bootstrap.R
 
-#' @title r3d_bootstrap: reuses e1_mat, alpha_{+}, alpha_{-} to do partial sums
+#' @title r3d_bootstrap: Multiplier Bootstrap for Uniform Inference
+#'
 #' @description
-#' If fuzzy => also uses e2_mat, alpha_{+,T}, alpha_{-,T}.
-#' We do not re-fit any local polynomials.
+#' Performs a multiplier bootstrap to obtain uniform confidence bands 
+#' and conduct hypothesis tests in \emph{distributional} RD settings. 
+#' Reuses the partial-sum intercept weights and residuals from a fitted \code{r3d} object,
+#' thus avoiding recomputing local polynomial regressions inside the bootstrap loop.
 #'
-#' @param object a "r3d" from r3d()
-#' @param X, Y_list, T same data
-#' @param B number of draws
-#' @param alpha
-#' @param test "none","nullity","homogeneity"
-#' @param cores integer
-#' @param seed optional
-#' @param ...
+#' @param object An S3 object of class \code{"r3d"}, typically the output of \code{\link{r3d}}.
+#' @param X Numeric vector (same as in the original call).
+#' @param Y_list List of numeric vectors (same as in the original call).
+#' @param T (Optional) numeric or logical vector for the fuzzy design; same data used in the original \code{r3d} call.
+#' @param B Integer, number of bootstrap draws (default 200).
+#' @param alpha Significance level for uniform confidence bands (default 0.05).
+#' @param test Character, either \code{"none"}, \code{"nullity"}, or \code{"homogeneity"}. 
+#'   \itemize{
+#'     \item \code{"none"}: no test, just compute confidence bands.
+#'     \item \code{"nullity"}: test the null that \eqn{\tau(q) = 0} for all \eqn{q}.
+#'     \item \code{"homogeneity"}: test the null that \eqn{\tau(q)} is constant across \eqn{q}.
+#'   }
+#' @param cores Number of CPU cores for parallel computing of bootstrap draws (default 1).
+#' @param seed Optional integer to set random seed for the multiplier draws.
+#' @param ... Unused additional arguments.
 #'
-#' @return list with cb_lower, cb_upper, test_stat, p_val, ...
+#' @details
+#' \bold{Approach}:
+#' A multiplier bootstrap draws i.i.d. normal multipliers \eqn{\xi_i}, 
+#' and re-scales the residual partial sums to generate approximate realizations 
+#' of the limiting process. See the references for theoretical details.
+#'
+#' The resulting object can be used to construct uniform confidence bands and test statistics.
+#'
+#' \bold{Tests}:
+#' \describe{
+#'   \item{\code{test = "nullity"}}{Tests \eqn{H_0: \tau(q)=0~\forall q} vs. \eqn{H_a: \tau(q)\neq 0} for some \eqn{q}.}
+#'   \item{\code{test = "homogeneity"}}{Tests \eqn{H_0: \tau(q) ~\text{is constant in}~ q} vs. \eqn{H_a: \tau(q) \text{ not constant}.}
+#' }
+#'
+#' @return A list with components:
+#' \item{cb_lower, cb_upper}{Numeric vectors of lower/upper confidence band values, same length as \code{object$q_grid}.}
+#' \item{boot_taus}{A matrix of the B bootstrap draws of the entire \eqn{\tau(q)} function. 
+#'    (Rows or columns, depending on your internal structure.)}
+#' \item{supvals}{For each bootstrap sample, the max absolute deviation from the point estimate.}
+#' \item{crit_val}{The critical value for the uniform band, e.g. the (1-\code{alpha}) quantile of \code{supvals}.}
+#' \item{test_stat, test_crit_val, p_value}{If \code{test != "none"}, these store the chosen test statistic, 
+#'    the critical value, and the resulting p-value.}
+#'
+#' @references
+#' Van Dijcke, D. (2025). \emph{Regression Discontinuity Design with Distributional Outcomes (R3D).} 
+#' Working paper. 
+#' \cr
+#' \cite{chiang2019robust}, \cite{calonico2014robust}, among others, discuss multiplier bootstraps in RD contexts.
+#'
+#' @seealso 
+#' \code{\link{r3d}}, \code{\link{plot.r3d}}, \code{\link{summary.r3d}}
+#'
+#' @examples
+#' \dontrun{
+#'   # Suppose you already fit r3d:
+#'   fit <- r3d(X, Y_list, boot=FALSE)  # no bootstrap initially
+#'   
+#'   # Then post hoc, you can run:
+#'   bootout <- r3d_bootstrap(fit, X, Y_list, B=300, alpha=0.05, test="homogeneity")
+#'   names(bootout)
+#'   # you get cb_lower, cb_upper, etc.
+#' }
+#'
 #' @export
-r3d_bootstrap <- function(object, X, Y_list, T=NULL,
-                          B=200, alpha=0.05, test=c("none","nullity","homogeneity"),
+r3d_bootstrap <- function(object, X, Y_list, method, T=NULL,
+                          B=200, alpha=0.05,
+                          test=c("none","nullity","homogeneity"),
                           cores=1, seed=NULL, ...)
 {
   test <- match.arg(test)
-  if(!inherits(object, "r3d")) stop("Need r3d object")
-  # retrieve
-  e1_mat <- object$e1_mat  # n x nQ
-  e2_mat <- object$e2_mat
-  tauhat <- object$tau
-  q_grid <- object$q_grid
-  nQ     <- length(q_grid)
-  n      <- length(X)
-  method <- object$method
-  fuzzy  <- object$fuzzy
+  if(!inherits(object,"r3d")) stop("Need r3d object from r3d()")
+  
+  # Extract components from object
+  n        <- length(X)
+  q_grid   <- object$q_grid
+  nQ       <- length(q_grid)
+  e1_mat   <- object$e1_mat
+  e2_mat   <- object$e2_mat
+  tauhat   <- object$tau
+  fuzzy    <- object$fuzzy
+  method   <- object$method
+  w_plus   <- object$w_plus
+  w_minus  <- object$w_minus
+  
+  # For fuzzy RDD, extract additional components
+  if(fuzzy) {
+    alpha_plus   <- object$alpha_plus
+    alpha_minus  <- object$alpha_minus
+    alphaT_plus  <- object$alphaT_plus
+    alphaT_minus <- object$alphaT_minus
+    int_plus <- object$int_plus
+    int_minus <- object$int_minus
+    denomT       <- alphaT_plus[1,1] - alphaT_minus[1,1]
+    
+    if(abs(denomT) < 1e-14) {
+      message("Bootstrap: fuzzy denominator near 0 => might blow up")
+    }
+  }
+  
+  # Set seed if provided
   if(!is.null(seed)) set.seed(seed)
   
-  # We also need the "boundary intercept weights" for partial sums, i.e. eq.(A.6):
-  # typically  w^+_i(q) = e0^T( \Gamma_{+,p}^-1 ) r_p(X_i/h) K(X_i/h). 
-  # You can store them in the main object as well. For brevity, let's store them or re-derive them from alpha_{+,p}? 
-  # Actually, eq.(A.6) uses the partial derivative approach. For clarity, let's define a small function that returns 
-  # the intercept weight for i => s_{+,i}(q). We'll just compute it once. 
-  # But to truly follow the paper, you'd do "resid_1(i,q)* r_p((X_i)/h(q)) * K((X_i)/h(q)) * e0^T(\Gamma_{+,p}^-1 ) / sqrt{n h(q)}" etc. 
-  # We'll do a simpler approach if we've stored those weights in the main function. For now, let's do eq.(A.6) directly.
+  # Pre-compute matrices for efficiency
+  # These calculations are independent of the bootstrap draws
+  e1_w_plus <- e1_mat * w_plus
+  e1_w_minus <- e1_mat * w_minus
   
-  # define doOneDraw(bi):
+  if(fuzzy) {
+    e2_w_plus <- e2_mat * w_plus
+    e2_w_minus <- e2_mat * w_minus
+    num_diff <- int_plus - int_minus # alpha_plus[1,] - alpha_minus[1,]
+  }
+  
+  # Define function to process one bootstrap draw
   doOneDraw <- function(bi) {
+    # Generate normal random variables
     xi <- rnorm(n)
-    # for each q_j => partial sum:
-    out_vec <- numeric(nQ)
-    for(j in seq_len(nQ)) {
-      # plus_sum = sum_i xi_i * e1_mat[i,j] * (the intercept weight for plus side)
-      # minus_sum= sum_i xi_i * e1_mat[i,j] * (the intercept weight for minus side)
-      # out= plus_sum - minus_sum
-      # We'll do a minimal approach: we do local polynomial "intercept" style weighting ourselves. 
-      # or we store s_plus[j, i], s_minus[j, i]. 
-      # The user might store them in object$s_plus, object$s_minus. 
-      # For now, let's assume we do s_{+, i}(q_j) => from "lpweights_rcpp(..., intercept=TRUE)" but let's be consistent:
-      # we do not want to re-run. So either we stored them or we do it. We'll assume we stored them as object$s_plus[j,i], object$s_minus[j,i].
-      # For demonstration, let's skip exact code and do an approximate partial sum:
+    
+    # For sharp RDD, compute plus and minus partial sums directly
+    plus_sums <- colSums(xi * e1_w_plus)
+    minus_sums <- colSums(xi * e1_w_minus)
+    out_sharp <- plus_sums - minus_sums
+    
+    if(!fuzzy) {
+      return(out_sharp)
+    } else {
+      # For fuzzy RDD, compute treatment partial sums
+      plus_sums2 <- colSums(xi * e2_w_plus)
+      minus_sums2 <- colSums(xi * e2_w_minus)
       
-      plus_sum  <- 0
-      minus_sum <- 0
-      for(i in seq_len(n)) {
-        # if side + => weight is 0 if X_i<0
-        # if side -, weight is 0 if X_i>=0
-        # The sign is from eq.(A.6). We'll do a direct approach to keep it short:
-        # e1_mat[i,j] is already the residual. Multiply by the "xi_i * local poly intercept weight"
-        # The local poly intercept weight for side plus is "some function." If we never stored it, we can't replicate eq. (A.6) exactly. 
-        # => So let's pretend we have object$w_plus[j, i] and object$w_minus[j, i].
-        wplus_ij  <- object$w_plus[j, i]
-        wminus_ij <- object$w_minus[j, i]
-        plus_sum  <- plus_sum  + xi[i]* e1_mat[i,j]* wplus_ij
-        minus_sum <- minus_sum + xi[i]* e1_mat[i,j]* wminus_ij
-      }
-      out_sharp_j <- plus_sum - minus_sum
-      if(!fuzzy) {
-        out_vec[j] <- out_sharp_j
-      } else {
-        # fuzzy => ratio eq. see eq.(A.6)
-        # partial2 => sum_i xi_i e2_mat[i,j]*( w_plus - w_minus ).
-        plus_sum2  <- 0
-        minus_sum2 <- 0
-        for(i in seq_len(n)) {
-          plus_sum2  <- plus_sum2  + xi[i]* e2_mat[i,j]* object$w_plus[j,i]
-          minus_sum2 <- minus_sum2 + xi[i]* e2_mat[i,j]* object$w_minus[j,i]
-        }
-        partial2 <- plus_sum2 - minus_sum2
-        # denominator => ( m_{+,T} - m_{-,T} )^2
-        # define m_plus_T => sum_i w_plus[j,i]* T[i], similarly minus
-        # or store in object$m_plus_T. 
-        # We'll do a short approach:
-        m_plus_T_j  <- sum(object$w_plus[j, ]  * T)
-        m_minus_T_j <- sum(object$w_minus[j, ] * T)
-        denom_T <- (m_plus_T_j - m_minus_T_j)^2
-        
-        # Also the factor => ( m_plus_T - m_minus_T ) * out_sharp_j - (m_plus(q_j)-m_minus(q_j)) * partial2
-        top <- ( (m_plus_T_j - m_minus_T_j)* out_sharp_j
-                 - (object$m_plus[j] - object$m_minus[j])* partial2 )
-        out_vec[j] <- top / denom_T
-      }
+      # Calculate numerator for ratio
+      top <- denomT * out_sharp - num_diff * (plus_sums2 - minus_sums2)
+      
+      # Return ratio (handle possible division by zero)
+      return(top / (denomT^2))
     }
-    out_vec
   }
   
-  # parallel
-  boot_list <- mclapply.hack(seq_len(B), mc.cores=cores, FUN = doOneDraw)
-  boot_mat  <- do.call(cbind, boot_list)  # nQ x B
-  
-  # uniform band
-  supvals <- apply( abs(boot_mat - tauhat), 2, max )
-  cval <- stats::quantile(supvals, probs=1-alpha, na.rm=TRUE)
-  cb_lower<- tauhat - cval
-  cb_upper<- tauhat + cval
-  
-  # test logic
-  test_stat<- NA
-  test_crit<- NA
-  p_val    <- NA
-  if(test=="nullity") {
-    test_stat<- max(abs(tauhat))
-    supvals_null<- apply(abs(boot_mat),2,max)
-    test_crit<- stats::quantile(supvals_null, 1-alpha)
-    p_val<- mean(supvals_null>= test_stat)
-  } else if(test=="homogeneity") {
-    mbar<- mean(tauhat)
-    test_stat<- max(abs(tauhat- mbar))
-    supvals_homo<- sapply(seq_len(B), function(bi) {
-      mb <- mean( boot_mat[,bi] )
-      max(abs(boot_mat[,bi]- mb))
-    })
-    test_crit<- stats::quantile(supvals_homo, 1-alpha)
-    p_val<- mean(supvals_homo>= test_stat)
+  # Run bootstrap in parallel
+  if(cores > 1 && requireNamespace("parallel", quietly = TRUE)) {
+    # Use parallel processing if cores > 1 and parallel package available
+    if(.Platform$OS.type == "windows") {
+      cl <- parallel::makeCluster(cores)
+      on.exit(parallel::stopCluster(cl))
+      boot_list <- parallel::parLapply(cl, 1:B, function(i) doOneDraw(i))
+    } else {
+      boot_list <- parallel::mclapply(1:B, doOneDraw, mc.cores = cores)
+    }
+  } else {
+    # Serial processing
+    boot_list <- lapply(1:B, doOneDraw)
   }
   
-  list(
-    cb_lower = cb_lower,
-    cb_upper = cb_upper,
-    boot_taus= boot_mat,
-    supvals  = supvals,
-    crit_val = cval,
-    test_stat= test_stat,
-    test_crit_val= test_crit,
-    p_value  = p_val
-  )
+  # Convert list to matrix (columns are bootstrap draws)
+  boot_mat <- do.call(cbind, boot_list)
+  
+  # Calculate uniform confidence bands
+  # Max absolute deviation across quantiles for each bootstrap sample
+  supvals <- apply(boot_mat, 2, function(colb) max(abs(colb - tauhat), na.rm = TRUE))
+  cval <- stats::quantile(supvals, probs = 1 - alpha, na.rm = TRUE)
+  cb_lower <- tauhat - cval
+  cb_upper <- tauhat + cval
+  
+  # Test statistics
+  test_stat <- NA_real_
+  test_crit <- NA_real_
+  p_val <- NA_real_
+  
+  if(test == "nullity") {
+    # Test H0: tau(q) = 0 for all q
+    test_stat <- max(abs(tauhat), na.rm = TRUE)
+    supvals_null <- apply(boot_mat, 2, function(colb) max(abs(colb), na.rm = TRUE))
+    test_crit <- stats::quantile(supvals_null, 1 - alpha, na.rm = TRUE)
+    p_val <- mean(supvals_null >= test_stat)
+  } else if(test == "homogeneity") {
+    # Test H0: tau(q) = constant for all q
+    mbar <- mean(tauhat, na.rm = TRUE)
+    test_stat <- max(abs(tauhat - mbar), na.rm = TRUE)
+    
+    # Vectorized calculation for homogeneity test
+    # For each bootstrap column, calculate mean, subtract from column, get max abs deviation
+    boot_means <- colMeans(boot_mat, na.rm = TRUE)
+    boot_centered <- sweep(boot_mat, 2, boot_means)
+    supvals_homo <- apply(boot_centered, 2, function(col) max(abs(col), na.rm = TRUE))
+    
+    test_crit <- stats::quantile(supvals_homo, 1 - alpha, na.rm = TRUE)
+    p_val <- mean(supvals_homo >= test_stat)
+  }
+  
+  # Return results
+  list(cb_lower = cb_lower, 
+       cb_upper = cb_upper,
+       boot_taus = boot_mat,
+       supvals = supvals,
+       crit_val = cval,
+       test_stat = test_stat,
+       test_crit_val = test_crit,
+       p_value = p_val)
 }
