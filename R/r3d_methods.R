@@ -1,3 +1,4 @@
+
 #' Summarize an r3d Object
 #'
 #' Displays a summary of the local polynomial (or Fréchet) regression discontinuity model
@@ -33,69 +34,84 @@
 #' }
 #'
 #' @export
-summary.r3d <- function(object, samples=c(0.25,0.5,0.75), ...) {
+summary.r3d <- function(object, samples = c(0.25, 0.5, 0.75), ...) {
   cat("Call:\n")
   print(object$call)
   cat("\nMethod:", object$method, "\n")
   cat("Polynomial order p:", object$p, "\n")
-  cat("Fuzzy:", object$fuzzy,"\n")
+  cat("Fuzzy:", object$fuzzy, "\n")
   cat("Sample size:", length(object$X), "\n")
   
   cat("Bandwidth(s):\n")
-  if(object$method=="simple") {
+  if (object$method == "simple") {
     cat(" Per-quantile MSE. Range:", 
-        round(min(unlist(object$bandwidths), na.rm=TRUE), 4), "to", 
-        round(max(unlist(object$bandwidths), na.rm=TRUE), 4), "\n")
+        round(min(unlist(object$bandwidths), na.rm = TRUE), 4), "to", 
+        round(max(unlist(object$bandwidths), na.rm = TRUE), 4), "\n")
   } else {
-    cat(" Single IMSE bandwidth:", round(object$results$h_used, 4),"\n")
+    cat(" Single IMSE bandwidth:", round(object$results$h_used$h_use_num, 4), "\n")
   }
   
-  cat("\nQuantile treatment effects:\n")
-  outdf <- data.frame(
-    Quantile = object$q_grid, 
-    Effect = round(object$tau, 4),
-    stringsAsFactors = FALSE
-  )
-  print(outdf)
+  # (Optional: printing all quantile treatment effects is commented out)
   
   # If we have bootstrap results, we can show uniform CB or test results
-  if(!is.null(object$boot_out)) {
-    cat("\nUniform Confidence Bands (alpha=", 
-        format(attr(object$boot_out, "alpha", exact=TRUE) %||% 0.05, digits=2), "):\n", sep="")
-    cb_l <- object$boot_out$cb_lower
-    cb_u <- object$boot_out$cb_upper
+  if (!is.null(object$boot_out)) {
+    # (Uniform confidence bands code commented out)
     
-    cb_df <- data.frame(
-      Quantile = object$q_grid,
-      Lower = round(cb_l, 4), 
-      Upper = round(cb_u, 4),
-      stringsAsFactors = FALSE
-    )
-    print(cb_df)
-    
-    # test
-    ts <- object$boot_out$test_stat
-    if(!is.na(ts)) {
-      cat("\nHypothesis test results:\n")
-      cat("Test statistic:", round(ts, 4),"\n")
-      cat("Critical value:", round(object$boot_out$test_crit_val, 4),"\n")
-      cat("P-value:", round(object$boot_out$p_value, 4),"\n")
+    # Check for test results in new format
+    if (!is.null(object$boot_out$test_results)) {
+      cat("\nHypothesis Test Results:\n")
       
-      if(!is.null(attr(object$boot_out, "test_type"))) {
+      for (test_type in names(object$boot_out$test_results)) {
+        cat("\n", toupper(test_type), " TESTS:\n", sep = "")
+        
+        range_results <- object$boot_out$test_results[[test_type]]
+        for (range_name in names(range_results)) {
+          result <- range_results[[range_name]]
+          
+          if (test_type == "gini") {
+            cat("  Gini coefficient above cutoff:", round(result$gini_above, 4), "\n")
+            cat("  Gini coefficient below cutoff:", round(result$gini_below, 4), "\n")
+            cat("  Difference in Gini coefficients:", round(result$gini_diff, 4), "\n")
+            cat("  Test statistic:", round(result$test_stat, 4), "\n")
+            cat("  Critical value:", round(result$test_crit_val, 4), "\n")
+            cat("  P-value:", round(result$p_value, 4), "\n")
+            cat("  ", result$description, "\n", sep = "")
+          } else {
+            cat("  Range ", range_name, ":\n", sep = "")
+            cat("    Test statistic:", round(result$test_stat, 4), "\n")
+            cat("    Critical value:", round(result$test_crit_val, 4), "\n")
+            cat("    P-value:", round(result$p_value, 4), "\n")
+            cat("    ", result$description, "\n", sep = "")
+          }
+        }
+      }
+    } 
+    # Check for backward compatibility with old format
+    else if (("test_stat" %in% names(object$boot_out)) &&
+             (length(object$boot_out$test_stat) > 0) &&
+             (!is.na(object$boot_out$test_stat))) {
+      cat("\nHypothesis test results:\n")
+      cat("Test statistic:", round(object$boot_out$test_stat, 4), "\n")
+      cat("Critical value:", round(object$boot_out$test_crit_val, 4), "\n")
+      cat("P-value:", round(object$boot_out$p_value, 4), "\n")
+      
+      if (!is.null(attr(object$boot_out, "test_type"))) {
         test_type <- attr(object$boot_out, "test_type")
       } else {
         # Try to infer from object$call
-        if(!is.null(object$call$test)) {
+        if (!is.null(object$call$test)) {
           test_type <- as.character(object$call$test)
         } else {
           test_type <- "unknown"
         }
       }
       
-      if(test_type == "nullity") {
+      if (test_type == "nullity") {
         cat("Test: H0: tau(q) = 0 for all q\n")
-      } else if(test_type == "homogeneity") {
+      } else if (test_type == "homogeneity") {
         cat("Test: H0: tau(q) is constant across q\n")
+      } else if (test_type == "gini") {
+        cat("Test: H0: No difference in Gini coefficients\n")
       } else {
         cat("Test type:", test_type, "\n")
       }
@@ -105,11 +121,11 @@ summary.r3d <- function(object, samples=c(0.25,0.5,0.75), ...) {
     s0 <- c(0, samples, 1)
     cat("\nAggregated distributional effects:\n")
     agg_mat <- NULL
-    for(i in seq_len(length(s0)-1)){
+    for (i in seq_len(length(s0) - 1)) {
       from <- s0[i]
-      to <- s0[i+1]
+      to <- s0[i + 1]
       sel <- which(object$q_grid >= from & object$q_grid <= to)
-      if(length(sel) > 0) {
+      if (length(sel) > 0) {
         mean_eff <- mean(object$tau[sel])
         ci_l <- mean(object$boot_out$cb_lower[sel])
         ci_u <- mean(object$boot_out$cb_upper[sel])
@@ -124,12 +140,14 @@ summary.r3d <- function(object, samples=c(0.25,0.5,0.75), ...) {
                          ))
       }
     }
-    print(agg_mat, row.names=FALSE)
+    print(agg_mat, row.names = FALSE)
   } else {
     cat("\nNo bootstrap results. Set boot=TRUE in r3d() to get inference.\n")
   }
   invisible(object)
 }
+
+
 
 # Helper for summary method
 `%||%` <- function(x, y) if(is.null(x)) y else x

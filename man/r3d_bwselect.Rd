@@ -2,7 +2,7 @@
 % Please edit documentation in R/r3d_bwselect.R
 \name{r3d_bwselect}
 \alias{r3d_bwselect}
-\title{Bandwidth Selection for Distributional RDD}
+\title{Bandwidth Selection for R3D}
 \usage{
 r3d_bwselect(
   X,
@@ -15,6 +15,7 @@ r3d_bwselect(
   kernel = function(u) pmax(0, 1 - abs(u)),
   cutoff = 0,
   fuzzy = FALSE,
+  coverage = FALSE,
   ...
 )
 }
@@ -41,6 +42,9 @@ from one unit's distribution.}
 
 \item{fuzzy}{Logical indicating fuzzy design. Default is FALSE.}
 
+\item{coverage}{Logical indicating whether to apply the coverage correction rule of thumb of
+\insertCite{calonico2018effect;textual}{R3D}. Default is FALSE.}
+
 \item{...}{Additional arguments for future expansions.}
 }
 \value{
@@ -55,25 +59,24 @@ A list with elements:
 \item{\code{s}, \code{p}}{Polynomial orders.}
 \item{\code{B_plus}, \code{B_minus}}{Bias estimates for numerator.}
 \item{\code{V_plus}, \code{V_minus}}{Variance estimates for numerator.}
-\item{\code{f_X_hat}}{Estimated density of \( X \) at cutoff.}
+\item{\code{f_X_hat}}{Estimated density of \eqn{X} at cutoff.}
 }
 }
 \description{
 Computes bandwidth(s) for local polynomial estimation in a regression discontinuity
-setting with distributional (Fréchet-valued) outcomes. Implements a three-step pilot
+setting with distribution-valued outcomes. Implements a three-step pilot
 procedure to find either MSE-optimal (per-quantile) bandwidths or a single IMSE-optimal
-bandwidth, depending on \code{method}.
+bandwidth, depending on \code{method}. For details, see the Appendix of \insertCite{vandijcke2025;textual}{R3D}.
 }
 \details{
 Implements a three-step procedure:
 \enumerate{
-\item Estimates \( f_X(0) \) using Silverman’s rule and computes pilot bandwidths via global polynomials.
+\item Estimates \eqn{f_X(0)} using Silverman’s rule and computes pilot bandwidths via global polynomials.
 \item Runs pilot local polynomial regressions to estimate bias and variance.
 \item Computes MSE-optimal (per-quantile) or IMSE-optimal (single) bandwidths.
 }
 In fuzzy RDD, separate bandwidths are computed for the numerator (outcome) and denominator (treatment).
 }
 \references{
-Van Dijcke, D. (2025). \emph{Regression Discontinuity Design with Distributional Outcomes (R3D)}.
-Working paper.
+\insertAllCited{}
 }

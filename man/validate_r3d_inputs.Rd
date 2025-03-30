@@ -19,7 +19,8 @@ validate_r3d_inputs(
   boot_reps,
   boot_cores,
   alpha,
-  test
+  test,
+  test_ranges = NULL
 )
 }
 \arguments{
@@ -51,7 +52,9 @@ validate_r3d_inputs(
 
 \item{alpha}{Numeric scalar for the significance level.}
 
-\item{test}{Character string specifying the type of test to perform.}
+\item{test}{Character string or vector specifying the type(s) of test to perform.}
+
+\item{test_ranges}{Optional list of numeric vectors defining the quantile ranges for testing.}
 }
 \value{
 NULL if all checks pass. Otherwise, stops with an informative error message.

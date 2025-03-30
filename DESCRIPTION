@@ -17,6 +17,8 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Depends: R (>= 4.0.0)
-Imports: stats, parallel, Rearrangement
+Imports: stats, parallel, Rearrangement, Rdpack
+RdMacros:
+    Rdpack
 Suggests: 
     testthat

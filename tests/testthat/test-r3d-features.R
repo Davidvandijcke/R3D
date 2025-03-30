@@ -419,26 +419,201 @@ test_that("r3d handles empty distributions in Y_list", {
 ################################################################################
 # 6) Test summary.r3d() and plot.r3d() methods
 ################################################################################
-
 test_that("summary.r3d() and plot.r3d() work properly", {
   skip_on_cran()
   set.seed(111)
   test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
-  out <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0, method = "simple", p = 1,
-             q_grid = seq(0.25, 0.75, by = 0.25), boot = TRUE, boot_reps = 5, test = "none")
+  out <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0, 
+             method = "simple", p = 1,
+             q_grid = seq(0.25, 0.75, by = 0.25), 
+             boot = TRUE, boot_reps = 5, test = "none")
   
-  expect_match(capture.output(summary(out)), "Method", all = FALSE)
-  expect_match(capture.output(summary(out)), "Polynomial order", all = FALSE)
-  expect_match(capture.output(summary(out)), "Uniform Confidence Bands", all = FALSE)
-  expect_match(capture.output(print(out)), "R3D: Regression Discontinuity with Distributional Outcomes", all = FALSE)
-
+  summ_out <- capture.output(summary(out))
+  expect_match(summ_out, "Method:", all = FALSE)
+  expect_match(summ_out, "Polynomial order p:", all = FALSE)
+  expect_match(summ_out, "Aggregated distributional effects:", all = FALSE)
+  
+  print_out <- capture.output(print(out))
+  expect_match(print_out, "R3D: Regression Discontinuity with Distributional Outcomes", all = FALSE)
+  
   pdf(NULL)
   expect_silent(plot(out, main = "Test Plot R3D"))
   dev.off()
 })
 
+
 ###############################################################################
-# 7) Visual validation checks for numeric testing
+# 7) Multiple tests
+###############################################################################
+
+
+
+test_that("r3d() works with multiple test types", {
+  set.seed(2001)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  
+  # Run r3d with both nullity and homogeneity tests
+  out_multi_test <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0, 
+                        method = "simple", p = 1, boot = TRUE, boot_reps = 10, 
+                        test = c("nullity", "homogeneity"), alpha = 0.2)
+  
+  # Check that we have test results for both types
+  expect_true(!is.null(out_multi_test$boot_out$test_results))
+  expect_true("nullity" %in% names(out_multi_test$boot_out$test_results))
+  expect_true("homogeneity" %in% names(out_multi_test$boot_out$test_results))
+  
+  # Check that each test type has valid results
+  for (test_type in c("nullity", "homogeneity")) {
+    test_results <- out_multi_test$boot_out$test_results[[test_type]]
+    expect_true(length(test_results) > 0)
+    
+    # Get the first range result
+    first_range <- test_results[[1]]
+    
+    # Check that it has the expected components
+    expect_true(all(c("test_stat", "test_crit_val", "p_value") %in% names(first_range)))
+    expect_true(is.numeric(first_range$test_stat))
+    expect_true(is.numeric(first_range$test_crit_val))
+    expect_true(is.numeric(first_range$p_value))
+    expect_true(first_range$p_value >= 0 && first_range$p_value <= 1)
+  }
+})
+test_that("r3d() works with test_ranges for specific quantile subsets", {
+  set.seed(2002)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  q_grid <- seq(0.1, 0.9, by = 0.1)
+  
+  # Test on a specific range [0.2, 0.7]
+  out_range <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0, 
+                   method = "simple", p = 1, q_grid = q_grid, boot = TRUE, boot_reps = 10,
+                   test = "nullity", test_ranges = list(c(0.2, 0.7)), alpha = 0.2)
+  
+  # Check that test results are for the specified range
+  expect_true(!is.null(out_range$boot_out$test_results))
+  expect_true("nullity" %in% names(out_range$boot_out$test_results))
+  
+  range_results <- out_range$boot_out$test_results$nullity
+  expect_true(length(range_results) > 0)
+  
+  # Get the range name (should be something like [0.20, 0.70])
+  range_name <- names(range_results)[1]
+  expect_match(range_name, "\\[0\\.2.*, 0\\.7.*\\]")
+  
+  # Test results should be calculated on the specified range
+  range_result <- range_results[[range_name]]
+  expect_true(all(c("range", "test_stat", "test_crit_val", "p_value") %in% names(range_result)))
+  expect_equal(range_result$range[1], 0.2)
+  expect_equal(range_result$range[2], 0.7)
+})
+
+test_that("r3d() works with multi-point ranges that get expanded into pairs", {
+  set.seed(2003)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  q_grid <- seq(0.1, 0.9, by = 0.1)
+  
+  # Test with a range specified as c(0.2, 0.5, 0.8)
+  # This should result in testing on [0.2, 0.5] and [0.5, 0.8]
+  out_multi_range <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0, 
+                         method = "simple", p = 1, q_grid = q_grid, boot = TRUE, boot_reps = 10,
+                         test = "homogeneity", test_ranges = list(c(0.2, 0.5, 0.8)), alpha = 0.2)
+  
+  # Check that test results contain two ranges
+  expect_true(!is.null(out_multi_range$boot_out$test_results))
+  expect_true("homogeneity" %in% names(out_multi_range$boot_out$test_results))
+  
+  range_results <- out_multi_range$boot_out$test_results$homogeneity
+  expect_equal(length(range_results), 2)
+  
+  # Check that the range names match the expected ranges
+  range_names <- names(range_results)
+  expect_true(any(grepl("\\[0\\.2.*, 0\\.5.*\\]", range_names)))
+  expect_true(any(grepl("\\[0\\.5.*, 0\\.8.*\\]", range_names)))
+})
+
+test_that("r3d() works with multiple test types and multiple ranges", {
+  set.seed(2004)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  q_grid <- seq(0.1, 0.9, by = 0.1)
+  
+  # Test with both nullity and homogeneity tests on two different ranges
+  out_complex <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0, 
+                     method = "simple", p = 1, q_grid = q_grid, boot = TRUE, boot_reps = 10,
+                     test = c("nullity", "homogeneity"), 
+                     test_ranges = list(c(0.2, 0.4), c(0.6, 0.8)), alpha = 0.2)
+  
+  # Check that test results contain both test types
+  expect_true(!is.null(out_complex$boot_out$test_results))
+  expect_true(all(c("nullity", "homogeneity") %in% names(out_complex$boot_out$test_results)))
+  
+  # Check that each test type has results for both ranges
+  for (test_type in c("nullity", "homogeneity")) {
+    range_results <- out_complex$boot_out$test_results[[test_type]]
+    expect_equal(length(range_results), 2)
+    
+    # Check that the range names match the expected ranges
+    range_names <- names(range_results)
+    expect_true(any(grepl("\\[0\\.2.*, 0\\.4.*\\]", range_names)))
+    expect_true(any(grepl("\\[0\\.6.*, 0\\.8.*\\]", range_names)))
+  }
+  
+  # There should be a total of 4 test results (2 test types × 2 ranges)
+  total_tests <- sum(sapply(out_complex$boot_out$test_results, length))
+  expect_equal(total_tests, 4)
+})
+
+test_that("r3d() handles invalid test_ranges appropriately", {
+  set.seed(2005)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  q_grid <- seq(0.1, 0.9, by = 0.1)
+
+  # Test with a range outside q_grid
+  expect_error(
+    r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0, 
+        method = "simple", p = 1, q_grid = q_grid, boot = TRUE, boot_reps = 10,
+        test = "nullity", test_ranges = list(c(0, 0.2)), alpha = 0.2)
+  )
+  
+  # Test with a range containing only one value
+  expect_error(
+    r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0, 
+        method = "simple", p = 1, q_grid = q_grid, boot = TRUE, boot_reps = 10,
+        test = "nullity", test_ranges = list(c(0.3)), alpha = 0.2)
+  )
+  
+  # Test with a range outside [0,1]
+  expect_error(
+    r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0, 
+        method = "simple", p = 1, q_grid = q_grid, boot = TRUE, boot_reps = 10,
+        test = "nullity", test_ranges = list(c(-0.1, 1.1)), alpha = 0.2)
+  )
+})
+
+test_that("summary.r3d() properly displays multiple test results", {
+  set.seed(2006)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  q_grid <- seq(0.1, 0.9, by = 0.1)
+  
+  out_multi <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0, 
+                   method = "simple", p = 1, q_grid = q_grid, boot = TRUE, boot_reps = 10,
+                   test = c("nullity", "homogeneity"), 
+                   test_ranges = list(c(0.2, 0.8)), alpha = 0.2)
+  
+  # Capture the summary output
+  summary_output <- capture.output(summary(out_multi))
+  
+  # Check for multiple test results in the output
+  expect_true(any(grepl("NULLITY TESTS:", summary_output, fixed = TRUE)))
+  expect_true(any(grepl("HOMOGENEITY TESTS:", summary_output, fixed = TRUE)))
+  expect_true(any(grepl("Range \\[0\\.2", summary_output)))
+  
+  # Check for test statistics, critical values, and p-values
+  expect_true(any(grepl("Test statistic:", summary_output, fixed = TRUE)))
+  expect_true(any(grepl("Critical value:", summary_output, fixed = TRUE)))
+  expect_true(any(grepl("P-value:", summary_output, fixed = TRUE)))
+})
+
+###############################################################################
+# 8) Visual validation checks for numeric testing
 ###############################################################################
 
 test_that("Visual validation with known treatment effects", {
@@ -504,4 +679,128 @@ test_that("Visual validation with known treatment effects", {
   legend("topright", c("Estimated", "Approx. True"), col = c("blue", "red"), lty = c(1, 2), lwd = 2)
   
   expect_true(TRUE)
+})
+
+
+###############################################################################
+# 9) Gini coefficient tests
+###############################################################################
+
+
+test_that("calculate_gini_from_quantile correctly measures inequality", {
+  # Perfect equality (constant quantile function)
+  equal_quantiles <- seq(0.1, 0.9, by = 0.1)
+  equal_values <- rep(10, length(equal_quantiles))
+  expect_equal(calculate_gini_from_quantile(equal_quantiles, equal_values), 0)
+  
+  # Perfect inequality (step function at the very end)
+  unequal_quantiles <- seq(0, 1, by = 0.1)
+  unequal_values <- c(rep(0, 10), 100)
+  expect_equal(round(calculate_gini_from_quantile(unequal_quantiles, unequal_values), 2), 0.9)
+  
+  # Linear quantile function (corresponds to uniform distribution)
+  # For a uniform distribution, the Gini coefficient should be 1/3
+  uniform_quantiles <- seq(0, 1, by = 0.01)
+  uniform_values <- uniform_quantiles * 100  # Q(p) = 100p for uniform on [0,100]
+  expect_equal(round(calculate_gini_from_quantile(uniform_quantiles, uniform_values), 2), 0.33)
+  
+  # Handle negative values
+  negative_quantiles <- seq(0.1, 0.9, by = 0.1)
+  negative_values <- c(-50, -40, -30, -20, -10, 0, 10, 20, 30)
+  expect_true(!is.na(calculate_gini_from_quantile(negative_quantiles, negative_values)))
+  
+  # Handle empty or insufficient data
+  expect_true(is.na(calculate_gini_from_quantile(c(), c())))
+  expect_true(is.na(calculate_gini_from_quantile(0.5, 100)))
+})
+
+test_that("r3d works with gini test using quantile functions", {
+  set.seed(3001)
+  
+  # Create test data with different distributions above/below cutoff
+  n <- 100
+  X <- runif(n, -1, 1)
+  
+  # Create distributions with different inequality levels
+  Y_list <- lapply(1:n, function(i) {
+    if (X[i] < 0) {
+      # More equal distribution below cutoff
+      rnorm(50, mean = 5, sd = 1)
+    } else {
+      # More unequal distribution above cutoff (mixture)
+      c(rnorm(25, mean = 3, sd = 0.5), 
+        rnorm(25, mean = 8, sd = 1.5))
+    }
+  })
+  
+  # Run r3d with Gini test
+  out_gini <- r3d(X = X, Y_list = Y_list, cutoff = 0, 
+                  method = "simple", p = 1, boot = TRUE, boot_reps = 20, 
+                  test = "gini", alpha = 0.1)
+  
+  # Check results structure
+  expect_true(!is.null(out_gini$boot_out$test_results))
+  expect_true("gini" %in% names(out_gini$boot_out$test_results))
+  
+  # Check Gini test results format
+  gini_results <- out_gini$boot_out$test_results$gini
+  expect_true(length(gini_results) > 0)
+  
+  # Get the result (should be under "full_sample")
+  gini_result <- gini_results[["full_sample"]]
+  
+  # Check that it has the expected components
+  expect_true(all(c("gini_above", "gini_below", "gini_diff", 
+                    "test_stat", "test_crit_val", "p_value", 
+                    "bootstrap_diffs") %in% names(gini_result)))
+  
+  # Both Gini coefficients should be between 0 and 1
+  expect_true(gini_result$gini_above >= 0 && gini_result$gini_above <= 1)
+  expect_true(gini_result$gini_below >= 0 && gini_result$gini_below <= 1)
+  
+  # The bootstrap distribution should have the right length
+  expect_equal(length(gini_result$bootstrap_diffs), 20)
+  
+  # Check that the Gini coefficients are different - distributions were created to be different
+  expect_true(abs(gini_result$gini_diff) > 0.05)
+})
+
+test_that("r3d works with multiple tests including gini", {
+  set.seed(3002)
+  n <- 80
+  X <- runif(n, -1, 1)
+  
+  # Create distributions with both different means and different inequality
+  Y_list <- lapply(1:n, function(i) {
+    if (X[i] < 0) {
+      # Lower mean, more equal
+      rnorm(40, mean = 5, sd = 1)
+    } else {
+      # Higher mean, more unequal
+      c(rnorm(20, mean = 6, sd = 0.8), 
+        rnorm(20, mean = 9, sd = 2))
+    }
+  })
+  
+  # Run r3d with multiple tests
+  out_multi <- r3d(X = X, Y_list = Y_list, cutoff = 0, 
+                   method = "simple", p = 1, boot = TRUE, boot_reps = 15, 
+                   test = c("nullity", "homogeneity", "gini"), alpha = 0.1)
+  
+  # Check results structure
+  expect_true(!is.null(out_multi$boot_out$test_results))
+  expect_true(all(c("nullity", "homogeneity", "gini") %in% names(out_multi$boot_out$test_results)))
+  
+  # Capture the summary output
+  summary_output <- capture.output(summary(out_multi))
+  
+  # Check for test results in the output
+  expect_true(any(grepl("NULLITY TESTS:", summary_output, fixed = TRUE)))
+  expect_true(any(grepl("HOMOGENEITY TESTS:", summary_output, fixed = TRUE)))
+  expect_true(any(grepl("GINI TESTS:", summary_output, fixed = TRUE)))
+  
+  # Check for Gini-specific output
+  expect_true(any(grepl("Gini coefficient above cutoff:", summary_output, fixed = TRUE)))
+  expect_true(any(grepl("Gini coefficient below cutoff:", summary_output, fixed = TRUE)))
+  expect_true(any(grepl("Difference in Gini coefficients:", summary_output, fixed = TRUE)))
 })

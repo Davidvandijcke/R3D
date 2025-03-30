@@ -3,6 +3,7 @@
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/dvdijcke/R3D/workflows/R-CMD-check/badge.svg)](https://github.com/yourusername/R3D/actions)
 [![CRAN status](https://www.r-pkg.org/badges/version/R3D)](https://CRAN.R-project.org/package=R3D)
+[![R-CMD-check](https://github.com/Davidvandijcke/r3d/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Davidvandijcke/r3d/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 ## Adding a New Dimension to RDD! 🚀
@@ -20,7 +21,7 @@ R3D brings your regression discontinuity designs into the third dimension by han
 ```r
 # Install the development version from GitHub:
 # install.packages("devtools")
-devtools::install_github("yourusername/R3D")
+devtools::install_github("Davidvandijcke/R3D")
 
 # Or once on CRAN:
 # install.packages("R3D")
@@ -63,7 +64,8 @@ summary(fit)
 
 ## How It Works 🔧
 
-R3D uses advanced local polynomial and Fréchet regression techniques to estimate how an entire distribution changes at a discontinuity threshold. Instead of just estimating E[Y|X] at the cutoff, we estimate the entire conditional quantile function Q_Y(τ|X) at the threshold!
+R3D uses advanced local polynomial and Fréchet regression techniques to estimate how an entire distribution changes at a discontinuity threshold when treatment is at a higher level of aggregation than the outcome variable. Instead of just estimating E[Y|X] at the cutoff, we estimate the entire *average* conditional quantile function Q_Y(τ|X) at the threshold. Note the word average! Unlike traditional quantile RDD, we are now sampling *random* distributions, which
+requires a different approach to estimation and inference. For more details on this fascinating subject, check out the supporting paper by Van Dijcke (that's me!) (2025 (that's now!)).
 
 ## Citation 📄
 
@@ -76,7 +78,7 @@ Working paper.
 
 ## Learn More 📚
 
-Check out the [full documentation](https://yourusername.github.io/R3D/) for tutorials, examples, and detailed function references.
+Check out the [full documentation](https://Davidvandijcke.github.io/R3D/) for tutorials, examples, and detailed function references.
 
 ## Contributing 🤝
 

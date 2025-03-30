@@ -2,7 +2,7 @@
 % Please edit documentation in R/r3d_bootstrap.R
 \name{r3d_bootstrap}
 \alias{r3d_bootstrap}
-\title{Multiplier Bootstrap for Distributional RDD}
+\title{Multiplier Bootstrap for R3D}
 \usage{
 r3d_bootstrap(
   object,
@@ -11,7 +11,8 @@ r3d_bootstrap(
   T = NULL,
   B = 200,
   alpha = 0.05,
-  test = c("none", "nullity", "homogeneity"),
+  test = c("none", "nullity", "homogeneity", "gini"),
+  test_ranges = NULL,
   cores = 1,
   seed = NULL,
   ...
@@ -32,12 +33,19 @@ used only if the original \code{r3d} call was fuzzy. Otherwise, can be \code{NUL
 
 \item{alpha}{Significance level for uniform confidence bands. Defaults to 0.05.}
 
-\item{test}{Character indicating which hypothesis test to conduct:
+\item{test}{Character vector indicating which hypothesis tests to conduct:
 \describe{
 \item{\code{"none"}}{No test, only compute confidence bands.}
 \item{\code{"nullity"}}{Tests the null \eqn{H_0: \tau(q) = 0 \text{ for all } q}.}
 \item{\code{"homogeneity"}}{Tests the null \eqn{H_0: \tau(q) \text{ is constant in } q}.}
-}}
+\item{\code{"gini"}}{Tests the null \eqn{H_0: \text{Gini coefficient above} = \text{Gini coefficient below}}.}
+}
+Multiple test types can be specified as a vector, e.g., \code{c("nullity", "homogeneity")}.}
+
+\item{test_ranges}{List of numeric vectors defining the quantile ranges for testing. Each element should be a
+vector of length 2 or more defining the ranges. For example, \code{list(c(0.25, 0.75))} to test on
+quantiles between 0.25 and 0.75, or \code{list(c(0.25, 0.5, 0.75))} to test on ranges \link{0.25, 0.5} and \link{0.5, 0.75}.
+If \code{NULL} (default), tests are performed on the entire \code{q_grid}.}
 
 \item{cores}{Number of CPU cores used for parallel computation of bootstrap draws (default 1).}
 
@@ -53,8 +61,8 @@ uniform confidence bands at each quantile in \code{object$q_grid}.}
 \item{\code{boot_taus}}{A matrix of bootstrap-draw realizations of the entire \eqn{\tau(q)}.}
 \item{\code{supvals}}{For each bootstrap draw, the supremum (max) absolute deviation.}
 \item{\code{crit_val}}{The critical value (e.g., the \code{(1 - alpha)} quantile of \code{supvals}).}
-\item{\code{test_stat}, \code{test_crit_val}, \code{p_value}}{If \code{test != "none"},
-these store the test statistic, critical value, and a simple bootstrap-based p-value.}
+\item{\code{test_results}}{If \code{test} is not \code{"none"}, a list of test results for each test
+and range combination, containing the test statistic, critical value, and p-value for each test.}
 }
 }
 \description{
@@ -62,6 +70,7 @@ Performs a multiplier bootstrap to obtain uniform confidence bands
 and (optionally) conduct hypothesis tests for an \emph{R3D} or \emph{F3D} design.
 It reuses the partial-sum intercept weights and residuals from a fitted \code{r3d} object
 to avoid re-estimating local polynomial regressions within each bootstrap loop.
+For details, see the Appendix of \insertCite{vandijcke2025;textual}{R3D}.
 }
 \details{
 This function implements the multiplier bootstrap approach for distributional RD:
@@ -72,6 +81,15 @@ is then used to form uniform confidence bands and test statistics.
 
 For the fuzzy design, the ratio-based estimator is handled similarly, using
 the same partial-sum logic for the treatment variable.
+
+When multiple tests and/or multiple range specifications are provided, the function
+will perform each test on each specified range, returning results for all combinations.
+
+The Gini test examines whether there is a statistically significant difference between
+the Gini coefficients of the estimated quantile functions above and below the cutoff.
+}
+\references{
+\insertAllCited{}
 }
 \seealso{
 \code{\link{r3d}}, \code{\link{plot.r3d}}, \code{\link{summary.r3d}}

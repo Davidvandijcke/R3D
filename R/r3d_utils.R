@@ -81,10 +81,77 @@ mclapply.hack <- function(X, FUN, mc.cores = 1, ...) {
 .dot_product <- function(x, y) {
   sum(x * y, na.rm = TRUE)
 }
+#' Calculate Gini Coefficient from Quantile Function
+#'
+#' Calculates the Gini coefficient using a discrete approximation of the quantile function.
+#' This implementation uses the relationship between the Gini coefficient and the Lorenz curve.
+#'
+#' @param quantiles Numeric vector of quantile levels (between 0 and 1)
+#' @param quantile_fn Numeric vector of quantile function values at those levels
+#'
+#' @return A numeric value between 0 and 1, where 0 represents perfect equality 
+#'   and 1 represents perfect inequality.
+#'
+#' @keywords internal
+calculate_gini_from_quantile <- function(quantiles, quantile_fn) {
+  # Validate inputs
+  if (length(quantiles) != length(quantile_fn) || length(quantiles) < 2) {
+    return(NA)
+  }
+  # Warn if the grid does not nearly span [0,1]
+  if (quantiles[1] > 0.01 || quantiles[length(quantiles)] < 0.99) {
+    warning("The quantile grid does not span nearly [0,1]. For more accurate Gini estimates, consider using a grid close to [0,1] (e.g., [0.01, 0.99]).")
+  }
+  
+  # Ensure the vectors are sorted by quantile values
+  ord <- order(quantiles)
+  quantiles <- quantiles[ord]
+  quantile_fn <- quantile_fn[ord]
+  
+  # Add endpoints if they are missing
+  if (quantiles[1] > 0) {
+    quantiles <- c(0, quantiles)
+    quantile_fn <- c(quantile_fn[1], quantile_fn)
+  }
+  if (quantiles[length(quantiles)] < 1) {
+    quantiles <- c(quantiles, 1)
+    quantile_fn <- c(quantile_fn, quantile_fn[length(quantile_fn)])
+  }
+  
+  # Calculate the mean of the distribution (approximation of ∫₀¹Q(p)dp)
+  mean_value <- 0
+  for (i in 1:(length(quantiles) - 1)) {
+    delta_p <- quantiles[i + 1] - quantiles[i]
+    mean_value <- mean_value + 0.5 * (quantile_fn[i + 1] + quantile_fn[i]) * delta_p
+  }
+  
+  if (mean_value <= 0) return(0)  # Avoid division by zero
+  
+  # Calculate the Lorenz curve
+  lorenz_curve <- numeric(length(quantiles))
+  lorenz_curve[1] <- 0
+  cumulative_area <- 0
+  
+  for (i in 1:(length(quantiles) - 1)) {
+    delta_p <- quantiles[i + 1] - quantiles[i]
+    avg_value <- 0.5 * (quantile_fn[i + 1] + quantile_fn[i])
+    cumulative_area <- cumulative_area + avg_value * delta_p
+    lorenz_curve[i + 1] <- cumulative_area / mean_value
+  }
+  
+  # Calculate area under the Lorenz curve using the trapezoidal rule
+  area <- 0
+  for (i in 1:(length(quantiles) - 1)) {
+    delta_p <- quantiles[i + 1] - quantiles[i]
+    area <- area + 0.5 * (lorenz_curve[i] + lorenz_curve[i + 1]) * delta_p
+  }
+  
+  # Gini coefficient: G = 1 - 2 * (area under Lorenz curve)
+  gini <- 1 - 2 * area
+  
+  return(max(0, min(1, gini)))
+}
 
-
-
-# File: r3d_utils.R
 
 #' Validate Inputs for r3d Function
 #'
@@ -105,12 +172,13 @@ mclapply.hack <- function(X, FUN, mc.cores = 1, ...) {
 #' @param boot_reps Integer specifying the number of bootstrap repetitions.
 #' @param boot_cores Integer specifying the number of CPU cores for bootstrap.
 #' @param alpha Numeric scalar for the significance level.
-#' @param test Character string specifying the type of test to perform.
+#' @param test Character string or vector specifying the type(s) of test to perform.
+#' @param test_ranges Optional list of numeric vectors defining the quantile ranges for testing.
 #'
 #' @return NULL if all checks pass. Otherwise, stops with an informative error message.
 #'
 #' @keywords internal
-validate_r3d_inputs <- function(X, Y_list, T = NULL, cutoff, method, p, q_grid, fuzzy, kernel_fun, s, boot, boot_reps, boot_cores, alpha, test) {
+validate_r3d_inputs <- function(X, Y_list, T = NULL, cutoff, method, p, q_grid, fuzzy, kernel_fun, s, boot, boot_reps, boot_cores, alpha, test, test_ranges = NULL) {
   
   # Check X
   if (!is.numeric(X)) {
@@ -213,13 +281,44 @@ validate_r3d_inputs <- function(X, Y_list, T = NULL, cutoff, method, p, q_grid, 
     stop("alpha must be a numeric scalar between 0 and 1.")
   }
   
-  # Check test
-  allowed_tests <- c("none", "nullity", "homogeneity")
-  if (!test %in% allowed_tests) {
-    stop(paste("test must be one of:", paste(allowed_tests, collapse = ", ")))
+  # Check test - Updated to handle vectors and include "gini"
+  allowed_tests <- c("none", "nullity", "homogeneity", "gini")
+  
+  if (is.character(test) && length(test) == 1) {
+    if (!test %in% allowed_tests) {
+      stop(paste("test must be one of:", paste(allowed_tests, collapse = ", ")))
+    }
+  } else if (is.character(test) && length(test) > 1) {
+    if (!all(test %in% allowed_tests)) {
+      stop(paste("All elements in 'test' must be one of:", paste(allowed_tests, collapse = ", ")))
+    }
+  } else {
+    stop("'test' must be a character string or vector specifying test types")
+  }
+  
+  # Check test_ranges
+  if (!is.null(test_ranges)) {
+    if (!is.list(test_ranges)) {
+      stop("test_ranges must be a list of numeric vectors")
+    }
+    
+    for (i in seq_along(test_ranges)) {
+      range <- test_ranges[[i]]
+      
+      if (!is.numeric(range)) {
+        stop(paste("Element", i, "in test_ranges is not a numeric vector"))
+      }
+      
+      if (length(range) < 2) {
+        stop(paste("Element", i, "in test_ranges must have at least 2 values to define a range"))
+      }
+      
+      if (any(range < 0 | range > 1)) {
+        stop(paste("All values in element", i, "of test_ranges must be between 0 and 1"))
+      }
+    }
   }
   
   # If all checks pass, return NULL (no error)
   return(NULL)
 }
-
