@@ -12,7 +12,7 @@
 * Comprehensive summary methods
 
 ### Bug Fixes
-
+ 
 * None (initial release)
 
 ### Other Changes
