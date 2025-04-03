@@ -160,6 +160,7 @@ summary.r3d <- function(object, samples = c(0.25, 0.5, 0.75), ...) {
 #'
 #' @param x An \code{r3d} object from \code{\link{r3d}}.
 #' @param main An overall title for the plot. If \code{NULL}, a default title is constructed.
+#' @param ylim Y-axis limits. If \code{NULL}, the limits are set automatically.
 #' @param xlab Label of the x-axis, defaults to \code{"Quantile"}.
 #' @param ylab Label of the y-axis, defaults to \code{"Treatment Effect"}.
 #' @param col Color for the main line. Defaults to \code{"blue"}.

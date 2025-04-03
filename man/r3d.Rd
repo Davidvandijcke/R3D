@@ -23,6 +23,7 @@ r3d(
   test = c("none", "nullity", "homogeneity", "gini"),
   test_ranges = NULL,
   coverage = FALSE,
+  weights = NULL,
   ...
 )
 }
@@ -89,6 +90,8 @@ If \code{NULL} (default), tests are performed on the entire \code{q_grid}.}
 
 \item{coverage}{Logical indicating whether to apply the coverage correction rule of thumb of
 \insertCite{calonico2018effect;textual}{R3D}. Default is FALSE.}
+
+\item{weights}{Optional numeric vector of weights for each observation that will be used to compute weighted quantiles. Defaults to unweighted.}
 
 \item{...}{Additional arguments passed to the bandwidth selection function \code{\link{r3d_bwselect}}.}
 }

@@ -4,12 +4,16 @@
 \alias{.compute_empirical_qmat}
 \title{Compute Empirical Quantiles for Each Unit}
 \usage{
-.compute_empirical_qmat(Y_list, q_grid)
+.compute_empirical_qmat(Y_list, q_grid, weights = NULL)
 }
 \arguments{
 \item{Y_list}{A list of numeric vectors, each giving observed samples from one unit's distribution.}
 
 \item{q_grid}{A numeric vector of quantiles, e.g. \code{seq(0.01, 0.99, 0.01)}.}
+
+\item{weights}{Optional list of numeric vectors providing weights for each element in \code{Y_list}.
+When provided, weighted quantiles are computed using \code{\link[Hmisc]{wtd.quantile}}.
+Default is \code{NULL}, which computes unweighted quantiles.}
 }
 \value{
 A numeric matrix of dimension \code{length(Y_list)} \eqn{\times} \code{length(q_grid)}.

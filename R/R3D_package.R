@@ -1,6 +1,5 @@
 #' @title R3D: Regression Discontinuity with Distributional Outcomes
 #' @name R3D-package
-#' @docType package
 #'
 #' @description
 #' The \pkg{R3D} package provides methods to estimate, infer, and visualize 
@@ -19,6 +18,10 @@
 #' @references
 #' Van Dijcke, D. (2025). \emph{Regression Discontinuity Design with Distributional Outcomes.}
 #' Working paper. 
+#' 
+#' @importFrom graphics abline
+#' @importFrom stats coef lm resid rnorm var
 #'
 #' @keywords package
-NULL
+#' 
+"_PACKAGE"

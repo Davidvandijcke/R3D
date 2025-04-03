@@ -353,3 +353,47 @@ validate_r3d_inputs <- function(X, Y_list, T = NULL, cutoff, method, p, q_grid, 
   # If all checks pass, return NULL (no error)
   return(NULL)
 }
+
+#' Fit a Global Polynomial Model and Extract Derivatives
+#'
+#' Internal helper function that fits a global polynomial regression model
+#' of specified order and computes the derivatives adjusted by factorial terms.
+#'
+#' @param Y Numeric vector of response variable observations.
+#' @param X Numeric vector of predictor variable observations.
+#' @param order Integer specifying the order of the polynomial to fit.
+#'
+#' @return A list containing:
+#' \item{derivs}{Numeric vector of polynomial derivatives evaluated at the fit, adjusted by factorial terms.}
+#' \item{resid_var}{Numeric scalar indicating the variance of the residuals from the polynomial fit. Defaults to 1 if estimation fails.}
+#'
+#' @details
+#' This function is robust to fitting errors; if polynomial fitting via `lm()`
+#' fails or produces NA coefficients, the function returns zero derivatives
+#' and a default residual variance of 1.
+#'
+#' @keywords internal
+#' @noRd
+fit_global_poly <- function(Y, X, order) {
+  fit <- try(lm(Y ~ poly(X, degree = order, raw = TRUE)), silent = TRUE)
+  
+  if (inherits(fit, "try-error") || is.null(fit)) {
+    return(list(derivs = rep(0, order), resid_var = 1))
+  }
+  
+  coefs <- coef(fit)
+  derivs <- rep(0, order)
+  
+  # Calculate derivatives adjusted by factorial terms
+  for (i in 1:order) {
+    if ((i+1) <= length(coefs) && !is.na(coefs[i+1])) {
+      derivs[i] <- coefs[i+1] * factorial(i)
+    }
+  }
+  
+  resid_var <- var(resid(fit))
+  if (is.na(resid_var)) resid_var <- 1
+  
+  return(list(derivs = derivs, resid_var = resid_var))
+}
+

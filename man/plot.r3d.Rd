@@ -23,6 +23,8 @@
 
 \item{main}{An overall title for the plot. If \code{NULL}, a default title is constructed.}
 
+\item{ylim}{Y-axis limits. If \code{NULL}, the limits are set automatically.}
+
 \item{xlab}{Label of the x-axis, defaults to \code{"Quantile"}.}
 
 \item{ylab}{Label of the y-axis, defaults to \code{"Treatment Effect"}.}

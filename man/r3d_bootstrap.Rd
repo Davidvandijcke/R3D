@@ -2,7 +2,7 @@
 % Please edit documentation in R/r3d_bootstrap.R
 \name{r3d_bootstrap}
 \alias{r3d_bootstrap}
-\title{Multiplier Bootstrap for R3D}
+\title{Multiplier Bootstrap for Distributional RDD}
 \usage{
 r3d_bootstrap(
   object,
@@ -70,7 +70,6 @@ Performs a multiplier bootstrap to obtain uniform confidence bands
 and (optionally) conduct hypothesis tests for an \emph{R3D} or \emph{F3D} design.
 It reuses the partial-sum intercept weights and residuals from a fitted \code{r3d} object
 to avoid re-estimating local polynomial regressions within each bootstrap loop.
-For details, see the Appendix of \insertCite{vandijcke2025;textual}{R3D}.
 }
 \details{
 This function implements the multiplier bootstrap approach for distributional RD:
@@ -87,9 +86,6 @@ will perform each test on each specified range, returning results for all combin
 
 The Gini test examines whether there is a statistically significant difference between
 the Gini coefficients of the estimated quantile functions above and below the cutoff.
-}
-\references{
-\insertAllCited{}
 }
 \seealso{
 \code{\link{r3d}}, \code{\link{plot.r3d}}, \code{\link{summary.r3d}}

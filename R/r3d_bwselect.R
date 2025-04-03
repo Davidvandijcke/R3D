@@ -166,29 +166,7 @@ r3d_bwselect <- function(X, Y_list, T = NULL,
   # Calculate kernel matrices
   kernel_matrices <- compute_kernel_matrices(s, kernel)
   
-  # 1(ii) Global polynomial fit approach for preliminary derivative estimates
-  fit_global_poly <- function(Y, X, order) {
-    fit <- try(lm(Y ~ poly(X, degree = order, raw = TRUE)), silent = TRUE)
-    
-    if (inherits(fit, "try-error") || is.null(fit)) {
-      return(list(derivs = rep(0, order), resid_var = 1))
-    }
-    
-    coefs <- coef(fit)
-    derivs <- rep(0, order)
-    
-    # Calculate derivatives adjusted by factorial terms
-    for (i in 1:order) {
-      if ((i+1) <= length(coefs) && !is.na(coefs[i+1])) {
-        derivs[i] <- coefs[i+1] * factorial(i)
-      }
-    }
-    
-    resid_var <- var(resid(fit))
-    if (is.na(resid_var)) resid_var <- 1
-    
-    return(list(derivs = derivs, resid_var = resid_var))
-  }
+ 
   
   # Initial global polynomial fits for derivatives and variances
   pilot_derivs_plus <- numeric(nQ)

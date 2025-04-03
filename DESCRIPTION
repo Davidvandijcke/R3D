@@ -11,7 +11,7 @@ Description: Implements two estimators for regression discontinuities with
     distributional outcomes (R3D): a local polynomial estimator and a Fréchet 
     regression estimator, along with multiplier bootstrap confidence intervals, 
     as described in Van Dijcke (2025).
-License: GPL-3
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
@@ -21,4 +21,4 @@ Imports: stats, parallel, Rearrangement, Rdpack, Hmisc
 RdMacros:
     Rdpack
 Suggests: 
-    testthat
+    testthat, dplyr
