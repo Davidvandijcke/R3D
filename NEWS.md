@@ -2,7 +2,7 @@
 
 ### New Features
 
-* Initial release of the R3D package
+* Initial release of the R3D package 
 * Implementation of `r3d()` for distributional regression discontinuity
 * Support for both sharp and fuzzy designs
 * Two estimation methods: simple (pointwise) and Fréchet (global)
