@@ -10,7 +10,7 @@
 * Multiplier bootstrap for uniform inference
 * Visualization tools via `plot.r3d()`
 * Comprehensive summary methods
-
+ 
 ### Bug Fixes
  
 * None (initial release)
