@@ -46,7 +46,7 @@
 #'   that there is no difference in the Gini coefficients of the distributions above and below the cutoff.
 #' @param test_ranges List of numeric vectors defining the quantile ranges for testing. Each element should be a
 #'   vector of length 2 or more defining the ranges. For example, \code{list(c(0.25, 0.75))} to test on 
-#'   quantiles between 0.25 and 0.75, or \code{list(c(0.25, 0.5, 0.75))} to test on ranges [0.25, 0.5] and [0.5, 0.75].
+#'   quantiles between 0.25 and 0.75, or \code{list(c(0.25, 0.5, 0.75))} to test on ranges \\[0.25, 0.5\\] and \\[0.5, 0.75 \\].
 #'   If \code{NULL} (default), tests are performed on the entire \code{q_grid}.
 #' @param coverage Logical indicating whether to apply the coverage correction rule of thumb of
 #' \insertCite{calonico2018effect;textual}{R3D}. Default is FALSE.
@@ -67,7 +67,7 @@
 #' When \code{test} includes one or more test types and \code{test_ranges} is specified, the function will 
 #' perform the specified tests on each range in \code{test_ranges}. For example, if \code{test=c("nullity", "homogeneity")} 
 #' and \code{test_ranges=list(c(0.25, 0.75), c(0.1, 0.9))}, four tests will be performed: nullity and homogeneity 
-#' tests on the range [0.25, 0.75], and nullity and homogeneity tests on the range [0.1, 0.9].
+#' tests on the range \\[0.25, 0.75\\], and nullity and homogeneity tests on the range \\[0.1, 0.9\\].
 #' 
 #' The Gini test (\code{test="gini"}) examines whether there is a statistically significant difference in 
 #' inequality (as measured by the Gini coefficient) between the distributions above and below the cutoff.

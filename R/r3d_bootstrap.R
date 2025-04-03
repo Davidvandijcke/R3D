@@ -23,7 +23,7 @@
 #'   Multiple test types can be specified as a vector, e.g., \code{c("nullity", "homogeneity")}.
 #' @param test_ranges List of numeric vectors defining the quantile ranges for testing. Each element should be a
 #'   vector of length 2 or more defining the ranges. For example, \code{list(c(0.25, 0.75))} to test on 
-#'   quantiles between 0.25 and 0.75, or \code{list(c(0.25, 0.5, 0.75))} to test on ranges [0.25, 0.5] and [0.5, 0.75].
+#'   quantiles between 0.25 and 0.75, or \code{list(c(0.25, 0.5, 0.75))} to test on ranges \\[0.25, 0.5\\] and \\[0.5, 0.75\\].
 #'   If \code{NULL} (default), tests are performed on the entire \code{q_grid}.
 #' @param cores Number of CPU cores used for parallel computation of bootstrap draws (default 1).
 #' @param seed Optional integer to set a random seed for the multiplier draws (for reproducibility).

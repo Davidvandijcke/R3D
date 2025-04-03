@@ -1,6 +1,6 @@
 # R3D News
 
-## R3D 0.1.0 (2025-03-11)
+## R3D 0.1.0
 
 ### New Features
 
