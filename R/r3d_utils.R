@@ -7,15 +7,34 @@
 #'
 #' @param Y_list A list of numeric vectors, each giving observed samples from one unit's distribution.
 #' @param q_grid A numeric vector of quantiles, e.g. \code{seq(0.01, 0.99, 0.01)}.
+#' @param weights Optional list of numeric vectors providing weights for each element in \code{Y_list}.
+#'   When provided, weighted quantiles are computed using \code{\link[Hmisc]{wtd.quantile}}.
+#'   Default is \code{NULL}, which computes unweighted quantiles.
 #'
 #' @return A numeric matrix of dimension \code{length(Y_list)} \eqn{\times} \code{length(q_grid)}.
 #'   Row \eqn{i} is \eqn{(\hat{Q}_{Y_i}(q_1), \ldots, \hat{Q}_{Y_i}(q_m))}.
 #'
 #' @keywords internal
-.compute_empirical_qmat <- function(Y_list, q_grid) {
+.compute_empirical_qmat <- function(Y_list, q_grid, weights = NULL) {
   n <- length(Y_list)
   nQ <- length(q_grid)
   Qmat <- matrix(NA, nrow=n, ncol=nQ)
+  
+  # Check if weights are provided and valid
+  use_weights <- !is.null(weights)
+  if (use_weights) {
+    if (!is.list(weights)) {
+      stop("weights must be a list of numeric vectors")
+    }
+    if (length(weights) != n) {
+      stop(paste("Length of weights (", length(weights), 
+                ") does not match length of Y_list (", n, ").", sep = ""))
+    }
+    if (!requireNamespace("Hmisc", quietly = TRUE)) {
+      warning("Hmisc package is required for weighted quantiles. Falling back to unweighted quantiles.")
+      use_weights <- FALSE
+    }
+  }
   
   for(i in seq_len(n)) {
     y_i <- Y_list[[i]]
@@ -23,7 +42,19 @@
       warning("Empty Y_list entry at index ", i)
       Qmat[i,] <- NA
     } else {
-      Qmat[i,] <- stats::quantile(y_i, probs=q_grid, na.rm=TRUE, names=FALSE)
+      if (use_weights) {
+        w_i <- weights[[i]]
+        if (length(w_i) != length(y_i)) {
+          warning("Length of weights[", i, "] does not match length of Y_list[", i, 
+                 "]. Using unweighted quantile for this entry.")
+          Qmat[i,] <- stats::quantile(y_i, probs=q_grid, na.rm=TRUE, names=FALSE)
+        } else {
+          Qmat[i,] <- Hmisc::wtd.quantile(y_i, weights=w_i, probs=q_grid, 
+                                         normwt=TRUE, na.rm=TRUE)
+        }
+      } else {
+        Qmat[i,] <- stats::quantile(y_i, probs=q_grid, na.rm=TRUE, names=FALSE)
+      }
     }
   }
   

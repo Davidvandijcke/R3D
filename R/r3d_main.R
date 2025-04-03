@@ -50,6 +50,7 @@
 #'   If \code{NULL} (default), tests are performed on the entire \code{q_grid}.
 #' @param coverage Logical indicating whether to apply the coverage correction rule of thumb of
 #' \insertCite{calonico2018effect;textual}{R3D}. Default is FALSE.
+#' @param weights Optional numeric vector of weights for each observation that will be used to compute weighted quantiles. Defaults to unweighted.
 #' @param ... Additional arguments passed to the bandwidth selection function \code{\link{r3d_bwselect}}.
 #'
 #' @details
@@ -139,9 +140,11 @@ r3d <- function(X, Y_list, T = NULL,
                 test = c("none", "nullity", "homogeneity", "gini"),
                 test_ranges = NULL,
                 coverage = FALSE,
+                weights = NULL,
                 ...)
 {
   method <- match.arg(method)
+  call <- match.call(expand.dots=FALSE)
   kernel_fun <- match.arg(kernel_fun)
   
   # Handle multiple test options
@@ -272,6 +275,7 @@ r3d <- function(X, Y_list, T = NULL,
                           cutoff = cutoff,
                           fuzzy = fuzzy,  # Pass fuzzy flag
                           coverage = coverage,
+                          weights = weights,  # Pass weights to bandwidth selection
                           ...)
     
     # Extract bandwidths
@@ -280,10 +284,8 @@ r3d <- function(X, Y_list, T = NULL,
   }
   
   # 2) Build matrix of empirical quantiles [n x nQ]
-  # check that Y_list is valid (not empty etc)
-  
-  
-  Qmat <- .compute_empirical_qmat(Y_list, q_grid)
+  # Pass weights to .compute_empirical_qmat
+  Qmat <- .compute_empirical_qmat(Y_list, q_grid, weights)
   
   # 3) Handle bandwidths based on method -- MODIFIED
   if (method == "simple") {
@@ -566,7 +568,12 @@ r3d <- function(X, Y_list, T = NULL,
   out$Y_list <- Y_list
   out$T <- T
   out$cutoff <- cutoff
-  out$call <- match.call()
+  out$call <- call
+  
+  # remove the data from the call
+  out$call$Y_list <- NULL         
+  out$call$X <- NULL      
+  out$call$weights <- NULL
   
   class(out) <- "r3d"
   

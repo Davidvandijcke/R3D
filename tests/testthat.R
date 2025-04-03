@@ -7,9 +7,9 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(drdd)
+library(R3D)
 
 options(datatable.auto.thread = 1)  # Limit data.table to 1 thread
 Sys.setenv(OMP_NUM_THREADS = 1) # limit environment to 1 thread
 
-test_check("r3d")
+test_check("R3D")

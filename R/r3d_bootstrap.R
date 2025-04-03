@@ -1,10 +1,9 @@
-#' Multiplier Bootstrap for R3D
+#' Multiplier Bootstrap for Distributional RDD
 #'
 #' Performs a multiplier bootstrap to obtain uniform confidence bands 
 #' and (optionally) conduct hypothesis tests for an \emph{R3D} or \emph{F3D} design.
 #' It reuses the partial-sum intercept weights and residuals from a fitted \code{r3d} object
 #' to avoid re-estimating local polynomial regressions within each bootstrap loop.
-#' For details, see the Appendix of \insertCite{vandijcke2025;textual}{R3D}.
 #'
 #' @param object An S3 object of class \code{"r3d"}, typically the output of \code{\link{r3d}}.
 #' @param X Numeric vector of the running variable (the same one used in \code{\link{r3d}}).
@@ -58,9 +57,6 @@
 #' }
 #'
 #' @seealso \code{\link{r3d}}, \code{\link{plot.r3d}}, \code{\link{summary.r3d}}
-#' 
-#' @references 
-#' \insertAllCited{}
 #'
 #' @export
 r3d_bootstrap <- function(object, X, Y_list, T = NULL,
@@ -250,8 +246,10 @@ r3d_bootstrap <- function(object, X, Y_list, T = NULL,
   
   # Calculate uniform confidence bands
   supvals <- apply(boot_mat, 2, function(colb) max(abs(colb), na.rm = TRUE))
-  cval <- stats::quantile(supvals, probs = 1 - alpha, na.rm = TRUE)
-  cb_lower <- tauhat - cval
+  supvals_sorted <- sort(supvals)
+  k <- ceiling((1 - alpha) * (B + 1))
+  cval <- supvals_sorted[k]  
+  cb_lower <- tauhat -  cval
   cb_upper <- tauhat + cval
   
   # Initialize test_results list
@@ -306,6 +304,9 @@ r3d_bootstrap <- function(object, X, Y_list, T = NULL,
         
         # Calculate critical value and p-value correctly
         test_stat <- abs(gini_diff)
+        test_crit <- stats::quantile(gini_diffs_boot, 1 - alpha, na.rm = TRUE)
+        
+        
         # We don't need to modify the bootstrap distribution
         # since we're testing if the difference is 0
         p_val <- mean(abs(gini_diffs_boot) >= test_stat, na.rm = TRUE)
