@@ -1,4 +1,4 @@
-# R3D: Regression Discontinuity with Distribution-Valued Outcomes <img src="man/figures/logo.png" align="right" height="120" alt="" />
+# R3D: Regression Discontinuity Design with Distribution-Valued Outcomes <img src="man/figures/logo.png" align="right" height="120" alt="" />
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/dvdijcke/R3D/workflows/R-CMD-check/badge.svg)](https://github.com/yourusername/R3D/actions)
