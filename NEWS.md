@@ -1,5 +1,3 @@
-# R3D News
-
 ## R3D 0.1.0
 
 ### New Features

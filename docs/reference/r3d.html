@@ -174,7 +174,7 @@ that there is no difference in the Gini coefficients of the distributions above 
 <dt>test_ranges</dt>
 <dd><p>List of numeric vectors defining the quantile ranges for testing. Each element should be a
 vector of length 2 or more defining the ranges. For example, <code>list(c(0.25, 0.75))</code> to test on
-quantiles between 0.25 and 0.75, or <code>list(c(0.25, 0.5, 0.75))</code> to test on ranges 0.25, 0.5 and 0.5, 0.75.
+quantiles between 0.25 and 0.75, or <code>list(c(0.25, 0.5, 0.75))</code> to test on ranges \[0.25, 0.5\] and \[0.5, 0.75 \].
 If <code>NULL</code> (default), tests are performed on the entire <code>q_grid</code>.</p></dd>
 
 
@@ -227,7 +227,7 @@ space of valid quantile functions (via isotonic regression),</p></li>
 </ol><p>When <code>test</code> includes one or more test types and <code>test_ranges</code> is specified, the function will
 perform the specified tests on each range in <code>test_ranges</code>. For example, if <code>test=c("nullity", "homogeneity")</code>
 and <code>test_ranges=list(c(0.25, 0.75), c(0.1, 0.9))</code>, four tests will be performed: nullity and homogeneity
-tests on the range 0.25, 0.75, and nullity and homogeneity tests on the range 0.1, 0.9.</p>
+tests on the range \[0.25, 0.75\], and nullity and homogeneity tests on the range \[0.1, 0.9\].</p>
 <p>The Gini test (<code>test="gini"</code>) examines whether there is a statistically significant difference in
 inequality (as measured by the Gini coefficient) between the distributions above and below the cutoff.
 It uses the estimated conditional quantile functions to calculate the Gini coefficients.</p>
