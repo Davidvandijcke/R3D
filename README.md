@@ -64,7 +64,7 @@ summary(fit)
 
 ## How It Works 🔧
 
-R3D uses advanced local polynomial and Fréchet regression techniques to estimate how an entire distribution changes at a discontinuity threshold when treatment is at a higher level of aggregation than the outcome variable. Instead of just estimating E[Y|X] at the cutoff, we estimate the entire *average* conditional quantile function Q_Y(τ|X) at the threshold. Note the word average! Unlike traditional quantile RDD, we are now sampling *random* distributions, which
+R3D uses advanced local polynomial and Fréchet regression techniques to estimate how an entire distribution changes at a discontinuity threshold when treatment is at a higher level of aggregation than the outcome variable. Instead of just estimating E[Y|X] at the cutoff, we estimate the entire *average* conditional quantile function E[Q_Y(τ|X)] at the threshold. Note the word average! Unlike traditional quantile RDD, we are now sampling *random* distributions, which
 requires a different approach to estimation and inference. For more details on this fascinating subject, check out the supporting paper by Van Dijcke (that's me!) (2025 (that's now!)).
 
 ## Citation 📄
