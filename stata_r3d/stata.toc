@@ -1,0 +1,13 @@
+v 3
+d Materials from the R3D package
+d David Van Dijcke, University of Michigan
+d
+d Distribution-Date: 28may2025
+d
+d This directory contains the R3D package for STATA
+d Regression Discontinuity with Distribution-valued Outcomes
+d
+d Based on the R package by David Van Dijcke
+d
+d Click below to install
+p r3d from . Regression Discontinuity with Distribution-valued Outcomes

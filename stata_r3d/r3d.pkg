@@ -1,0 +1,44 @@
+v 3
+d r3d: Regression Discontinuity with Distribution-valued Outcomes
+d Program by David Van Dijcke, University of Michigan
+d Distribution-Date: 28may2025
+d
+d This package implements regression discontinuity designs where the outcome
+d is a distribution rather than a scalar. Supports both sharp and fuzzy RD,
+d bootstrap inference, and optimal bandwidth selection.
+d
+d Author: David Van Dijcke
+d Support: dvdijcke@umich.edu
+d
+d Required STATA version: 14.0
+d
+d KW: regression discontinuity
+d KW: distributional outcomes
+d KW: quantile treatment effects
+d KW: causal inference
+d
+d Requires: STATA version 14.0
+d
+f ado/r3d.ado
+f ado/r3d_bootstrap.ado
+f ado/r3d_bwselect.ado
+f ado/r3d_plugin_load.ado
+f ado/r3d_setup.ado
+f mata/r3d_mata.mata
+f mata/r3d_plugin_interface.mata
+f doc/r3d.sthlp
+f doc/r3d_bootstrap.sthlp
+f doc/r3d_bwselect.sthlp
+f README.md
+f INSTALL.md
+f example.do
+F ado/r3d_plugin.plugin
+e
+d
+d The plugin file r3d_plugin.plugin provides enhanced performance
+d but is optional. The package works with pure Mata if the plugin
+d is not available or fails to load.
+d
+d After installation, Mata functions are automatically compiled
+d when r3d is first run. No separate setup step is required.
+d
