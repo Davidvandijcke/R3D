@@ -27,6 +27,9 @@
 #'   If \code{NULL} (default), tests are performed on the entire \code{q_grid}.
 #' @param cores Number of CPU cores used for parallel computation of bootstrap draws (default 1).
 #' @param seed Optional integer to set a random seed for the multiplier draws (for reproducibility).
+#' @param xi_mat Optional \eqn{n \times B} matrix of pre-generated N(0,1) multipliers for deterministic
+#'   bootstrap (used for cross-platform equivalence testing). If \code{NULL} (default), draws are generated
+#'   randomly. When provided, \code{B} is ignored and set to \code{ncol(xi_mat)}.
 #' @param ... Unused additional arguments (for compatibility).
 #'
 #' @details
@@ -63,7 +66,7 @@ r3d_bootstrap <- function(object, X, Y_list, T = NULL,
                           B = 200, alpha = 0.05,
                           test = c("none", "nullity", "homogeneity", "gini"),
                           test_ranges = NULL,
-                          cores = 1, seed = NULL, ...)
+                          cores = 1, seed = NULL, xi_mat = NULL, ...)
 {
   # Validate test parameter
   if (is.character(test) && length(test) == 1) {
@@ -82,7 +85,13 @@ r3d_bootstrap <- function(object, X, Y_list, T = NULL,
   }
   
   if (!inherits(object, "r3d")) stop("Need r3d object from r3d()")
-  
+
+  # Override B if xi_mat is provided
+  if (!is.null(xi_mat)) {
+    if (!is.matrix(xi_mat)) stop("xi_mat must be a matrix")
+    B <- ncol(xi_mat)
+  }
+
   # Extract components from object
   n <- length(X)
   q_grid <- object$q_grid
@@ -141,7 +150,7 @@ r3d_bootstrap <- function(object, X, Y_list, T = NULL,
   # Define function to process one bootstrap draw
   # Modified to store nu_plus and nu_minus if needed
   doOneDraw <- function(bi) {
-    xi <- rnorm(n)
+    xi <- if (!is.null(xi_mat)) xi_mat[, bi] else rnorm(n)
     
     # Initialize variables to store nu_plus and nu_minus if needed
     if (need_separate_components) {

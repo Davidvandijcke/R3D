@@ -15,6 +15,7 @@ r3d_bootstrap(
   test_ranges = NULL,
   cores = 1,
   seed = NULL,
+  xi_mat = NULL,
   ...
 )
 }
@@ -50,6 +51,10 @@ If \code{NULL} (default), tests are performed on the entire \code{q_grid}.}
 \item{cores}{Number of CPU cores used for parallel computation of bootstrap draws (default 1).}
 
 \item{seed}{Optional integer to set a random seed for the multiplier draws (for reproducibility).}
+
+\item{xi_mat}{Optional \eqn{n \times B} matrix of pre-generated N(0,1) multipliers for deterministic
+bootstrap (used for cross-platform equivalence testing). If \code{NULL} (default), draws are generated
+randomly. When provided, \code{B} is ignored and set to \code{ncol(xi_mat)}.}
 
 \item{...}{Unused additional arguments (for compatibility).}
 }

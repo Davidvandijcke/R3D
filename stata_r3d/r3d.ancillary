@@ -1,0 +1,14 @@
+* Ancillary files for R3D package - Optional components
+
+f plugin/r3d_fortran.f90
+f plugin/r3d_plugin.c
+f plugin/Makefile
+f plugin/stplugin.h
+f test/test_r3d.do
+f test/test_plugin.do
+f install_r3d.do
+
+* These files are not required for basic operation but provide:
+* - Source code for building the plugin (plugin/ directory)
+* - Test scripts (test/ directory)  
+* - Alternative installation method (install_r3d.do)

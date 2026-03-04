@@ -1,3 +1,10 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.github$
+^stata_r3d$
+^\.claude$
+^CLAUDE\.md$
+^DEVELOPMENT\.md$
+^r3d_latest\.pdf$
+^docs$
+^pkgdown$
