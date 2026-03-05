@@ -803,6 +803,35 @@ test_that("Bootstrap with seed produces identical results across two calls", {
   expect_equal(bo1$crit_val,  bo2$crit_val)
 })
 
+################################################################################
+# 10) S3 method bug-fix regression tests
+################################################################################
+
+test_that("print.r3d shows numeric bandwidth (not 'list') for frechet method", {
+  set.seed(5001)
+  n <- 50
+  x <- runif(n, -1, 1)
+  y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + 2 * (x[i] >= 0)))
+  fit <- r3d(X = x, Y_list = y_list, cutoff = 0, method = "frechet", p = 1, boot = FALSE)
+  out <- capture.output(print(fit))
+  # Must not contain 'list(' in the bandwidth line
+  bw_line <- out[grep("Bandwidth:", out)]
+  expect_false(any(grepl("list\\(", bw_line)))
+  # Must contain a numeric value
+  expect_match(paste(bw_line, collapse = " "), "[0-9]")
+})
+
+test_that("summary.r3d does not crash when boot_out lacks cb_lower", {
+  set.seed(5002)
+  n <- 40
+  x <- runif(n, -1, 1)
+  y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + (x[i] >= 0)))
+  fit <- r3d(X = x, Y_list = y_list, cutoff = 0, method = "simple", p = 1, boot = FALSE)
+  # Attach a boot_out without cb_lower/cb_upper (e.g. only test_results)
+  fit$boot_out <- list(test_results = list())
+  expect_no_error(capture.output(summary(fit)))
+})
+
 test_that("r3d works with multiple tests including gini", {
   set.seed(3002)
   n <- 80

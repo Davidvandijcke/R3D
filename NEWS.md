@@ -13,6 +13,8 @@
 
 ### Bug Fixes
 
+* Fixed `print.r3d` garbled bandwidth output for `method="frechet"`: now correctly accesses `x$results$h_used$h_use_num` instead of formatting the whole list
+* Fixed `summary.r3d` crash when `boot_out` is present but lacks `cb_lower`/`cb_upper`: aggregation block now guarded with `!is.null(object$boot_out$cb_lower)`
 * Fixed DLL registration: renamed `R_init_YourPackageName` to `R_init_R3D` so `R_registerRoutines` and `R_useDynamicSymbols` are called on load
 * Fixed C/Fortran type mismatch: argument 7 of `locweights` changed from `double *KERNELW` to `int *KERNEL_TYPE` to match Fortran `INTEGER` declaration
 * Fixed compound quoting bug in `r3d.ado` (lines 39-41) that caused option parsing failures when paths contained spaces
