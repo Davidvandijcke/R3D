@@ -130,12 +130,6 @@ r3d_bootstrap <- function(object, X, Y_list, T = NULL,
   # Center X values
   X_centered <- X - object$cutoff
   
-  # Estimate f_X(0) using Silverman's rule
-  sigma_X <- stats::sd(X_centered)
-  h_bw <- 1.06 * sigma_X * n^(-1/5)
-  kernel <- object$kernel
-  f_X_hat <- mean(kernel(X_centered / h_bw)) / h_bw
-  
   # Pre-compute matrices for efficiency
   e1_w_plus <- e1_mat * w_plus 
   e1_w_minus <- e1_mat * w_minus 
@@ -163,10 +157,8 @@ r3d_bootstrap <- function(object, X, Y_list, T = NULL,
       plus_sums <- numeric(nQ)
       minus_sums <- numeric(nQ)
       for (q in 1:nQ) {
-        h_q <- h_star_num[q]
-        scaling_q <- 1
-        plus_sums[q] <- sum(xi * e1_w_plus[, q]) * scaling_q
-        minus_sums[q] <- sum(xi * e1_w_minus[, q]) * scaling_q
+        plus_sums[q] <- sum(xi * e1_w_plus[, q])
+        minus_sums[q] <- sum(xi * e1_w_minus[, q])
       }
       
       if (need_separate_components) {
@@ -177,10 +169,8 @@ r3d_bootstrap <- function(object, X, Y_list, T = NULL,
       out_sharp <- plus_sums - minus_sums
     } else {
       # "frechet" method: single bandwidth
-      h_num <- if (length(h_star_num) == 1) h_star_num else mean(h_star_num, na.rm = TRUE)
-      scaling_num <- 1
-      plus_sums <- colSums(xi * e1_w_plus) * scaling_num
-      minus_sums <- colSums(xi * e1_w_minus) * scaling_num
+      plus_sums <- colSums(xi * e1_w_plus)
+      minus_sums <- colSums(xi * e1_w_minus)
       
       if (need_separate_components) {
         nu_plus <- plus_sums
@@ -203,9 +193,8 @@ r3d_bootstrap <- function(object, X, Y_list, T = NULL,
       }
     } else {
       # Fuzzy RDD: denominator uses h_star_den
-      scaling_den <- 1
-      plus_sums2 <- sum(xi * e2_w_plus[, 1]) * scaling_den
-      minus_sums2 <- sum(xi * e2_w_minus[, 1]) * scaling_den
+      plus_sums2 <- sum(xi * e2_w_plus[, 1])  # e2_mat columns are identical (scalar T residuals broadcast to nQ); col 1 suffices
+      minus_sums2 <- sum(xi * e2_w_minus[, 1])
       denom_term <- plus_sums2 - minus_sums2
       
       # For fuzzy design, adjust the calculation
@@ -231,6 +220,7 @@ r3d_bootstrap <- function(object, X, Y_list, T = NULL,
     if (.Platform$OS.type == "windows") {
       cl <- parallel::makeCluster(cores)
       on.exit(parallel::stopCluster(cl))
+      parallel::clusterSetRNGStream(cl, iseed = seed)
       boot_list <- parallel::parLapply(cl, 1:B, function(i) doOneDraw(i))
     } else {
       boot_list <- parallel::mclapply(1:B, doOneDraw, mc.cores = cores)
@@ -313,7 +303,7 @@ r3d_bootstrap <- function(object, X, Y_list, T = NULL,
         
         # Calculate critical value and p-value correctly
         test_stat <- abs(gini_diff)
-        test_crit <- stats::quantile(gini_diffs_boot, 1 - alpha, na.rm = TRUE)
+        test_crit <- stats::quantile(abs(gini_diffs_boot), 1 - alpha, na.rm = TRUE)
         
         
         # We don't need to modify the bootstrap distribution
