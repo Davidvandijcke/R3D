@@ -131,17 +131,25 @@ summary.r3d <- function(object, samples = c(0.25, 0.5, 0.75), ...) {
       sel <- which(object$q_grid >= from & object$q_grid <= to)
       if (length(sel) > 0) {
         mean_eff <- mean(object$tau[sel])
-        ci_l <- mean(object$boot_out$cb_lower[sel])
-        ci_u <- mean(object$boot_out$cb_upper[sel])
-        
-        agg_mat <- rbind(agg_mat, 
-                         data.frame(
-                           Quantile_Range = paste(from, "-", to),
-                           Average_Effect = round(mean_eff, 4),
-                           CI_Lower = round(ci_l, 4),
-                           CI_Upper = round(ci_u, 4),
-                           stringsAsFactors = FALSE
-                         ))
+        if (!is.null(object$boot_out$cb_lower)) {
+          ci_l <- mean(object$boot_out$cb_lower[sel])
+          ci_u <- mean(object$boot_out$cb_upper[sel])
+          agg_mat <- rbind(agg_mat,
+                           data.frame(
+                             Quantile_Range = paste(from, "-", to),
+                             Average_Effect = round(mean_eff, 4),
+                             CI_Lower = round(ci_l, 4),
+                             CI_Upper = round(ci_u, 4),
+                             stringsAsFactors = FALSE
+                           ))
+        } else {
+          agg_mat <- rbind(agg_mat,
+                           data.frame(
+                             Quantile_Range = paste(from, "-", to),
+                             Average_Effect = round(mean_eff, 4),
+                             stringsAsFactors = FALSE
+                           ))
+        }
       }
     }
     print(agg_mat, row.names = FALSE)
@@ -283,7 +291,7 @@ print.r3d <- function(x, ...) {
   if(x$method == "simple") {
     cat("Bandwidths: MSE-optimal (varies by quantile)\n")
   } else {
-    cat("Bandwidth: IMSE-optimal =", format(x$results$h_used, digits=4), "\n")
+    cat("Bandwidth: IMSE-optimal =", format(x$results$h_used$h_use_num, digits=4), "\n")
   }
   
   # Sample sizes
