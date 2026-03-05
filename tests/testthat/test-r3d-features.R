@@ -691,27 +691,27 @@ test_that("calculate_gini_from_quantile correctly measures inequality", {
   # Perfect equality (constant quantile function)
   equal_quantiles <- seq(0.1, 0.9, by = 0.1)
   equal_values <- rep(10, length(equal_quantiles))
-  expect_equal(calculate_gini_from_quantile(equal_quantiles, equal_values), 0)
+  expect_equal(R3D:::calculate_gini_from_quantile(equal_quantiles, equal_values), 0)
   
   # Perfect inequality (step function at the very end)
   unequal_quantiles <- seq(0, 1, by = 0.1)
   unequal_values <- c(rep(0, 10), 100)
-  expect_equal(round(calculate_gini_from_quantile(unequal_quantiles, unequal_values), 2), 0.9)
+  expect_equal(round(R3D:::calculate_gini_from_quantile(unequal_quantiles, unequal_values), 2), 0.9)
   
   # Linear quantile function (corresponds to uniform distribution)
   # For a uniform distribution, the Gini coefficient should be 1/3
   uniform_quantiles <- seq(0, 1, by = 0.01)
   uniform_values <- uniform_quantiles * 100  # Q(p) = 100p for uniform on [0,100]
-  expect_equal(round(calculate_gini_from_quantile(uniform_quantiles, uniform_values), 2), 0.33)
+  expect_equal(round(R3D:::calculate_gini_from_quantile(uniform_quantiles, uniform_values), 2), 0.33)
   
   # Handle negative values
   negative_quantiles <- seq(0.1, 0.9, by = 0.1)
   negative_values <- c(-50, -40, -30, -20, -10, 0, 10, 20, 30)
-  expect_true(!is.na(calculate_gini_from_quantile(negative_quantiles, negative_values)))
+  expect_true(!is.na(R3D:::calculate_gini_from_quantile(negative_quantiles, negative_values)))
   
   # Handle empty or insufficient data
-  expect_true(is.na(calculate_gini_from_quantile(c(), c())))
-  expect_true(is.na(calculate_gini_from_quantile(0.5, 100)))
+  expect_true(is.na(R3D:::calculate_gini_from_quantile(c(), c())))
+  expect_true(is.na(R3D:::calculate_gini_from_quantile(0.5, 100)))
 })
 
 test_that("r3d works with gini test using quantile functions", {
@@ -803,4 +803,65 @@ test_that("r3d works with multiple tests including gini", {
   expect_true(any(grepl("Gini coefficient above cutoff:", summary_output, fixed = TRUE)))
   expect_true(any(grepl("Gini coefficient below cutoff:", summary_output, fixed = TRUE)))
   expect_true(any(grepl("Difference in Gini coefficients:", summary_output, fixed = TRUE)))
+})
+
+###############################################################################
+# 10) Frechet bootstrap, kernel types, parallel bootstrap, user-supplied args
+###############################################################################
+
+test_that("r3d() frechet + boot=TRUE yields valid confidence bands (sharp)", {
+  set.seed(4001)
+  test_data <- create_test_data(n = 50, sample_size = 30, fuzzy = FALSE)
+  out <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0,
+             method = "frechet", p = 1, boot = TRUE, boot_reps = 10, alpha = 0.2)
+
+  expect_s3_class(out, "r3d")
+  expect_equal(out$method, "frechet")
+  expect_false(any(is.na(out$tau)))
+  expect_true("boot_out" %in% names(out))
+  expect_true(all(out$boot_out$cb_upper >= out$tau, na.rm = TRUE))
+})
+
+test_that("r3d() works with epanechnikov, triangular, and uniform kernels (simple, sharp)", {
+  set.seed(4002)
+  test_data <- create_test_data(n = 60, sample_size = 30, fuzzy = FALSE)
+  for (kfun in c("epanechnikov", "triangular", "uniform")) {
+    out <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0,
+               method = "simple", p = 1, boot = FALSE, kernel_fun = kfun)
+    expect_s3_class(out, "r3d")
+    expect_false(any(is.na(out$tau)))
+  }
+})
+
+test_that("r3d() parallel bootstrap (cores=2) returns same structure as serial", {
+  skip_on_cran()
+  set.seed(4003)
+  test_data <- create_test_data(n = 50, sample_size = 30, fuzzy = FALSE)
+  r3d_obj <- r3d(X = test_data$x, Y_list = test_data$y_list, method = "simple",
+                 p = 1, boot = FALSE)
+  bo <- r3d_bootstrap(object = r3d_obj, X = test_data$x, Y_list = test_data$y_list,
+                      B = 10, alpha = 0.2, test = "nullity", cores = 2)
+  expect_true(all(c("cb_lower", "cb_upper", "p_value") %in% names(bo)))
+  expect_equal(length(bo$cb_lower), length(r3d_obj$q_grid))
+  expect_true(!is.na(bo$p_value))
+})
+
+test_that("r3d() accepts user-supplied bandwidths and weights", {
+  set.seed(4004)
+  n <- 60
+  test_data <- create_test_data(n = n, sample_size = 30, fuzzy = FALSE)
+
+  # Scalar bandwidth
+  out_bw <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0,
+                method = "simple", p = 1, boot = FALSE, bandwidths = 0.3)
+  expect_s3_class(out_bw, "r3d")
+  expect_false(any(is.na(out_bw$tau)))
+
+  # User-supplied weights (all equal, one weight vector per observation)
+  wts <- lapply(test_data$y_list, function(y) rep(1, length(y)))
+  out_wt <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0,
+                method = "simple", p = 1, boot = FALSE,
+                weights = wts)
+  expect_s3_class(out_wt, "r3d")
+  expect_false(any(is.na(out_wt$tau)))
 })

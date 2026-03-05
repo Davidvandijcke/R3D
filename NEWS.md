@@ -1,5 +1,9 @@
 ## R3D 0.1.1 (development)
 
+### Tests
+
+* Expanded test coverage: frechet+bootstrap, epanechnikov/uniform kernels, parallel bootstrap (cores=2), user-supplied bandwidths and weights, internal `calculate_gini_from_quantile` via `R3D:::` prefix
+
 ### New Features
 
 * Added `xi_mat` parameter to `r3d_bootstrap()` for deterministic bootstrap with pre-generated multiplier draws (enables cross-platform equivalence testing)
