@@ -326,7 +326,9 @@ r3d <- function(X, Y_list, T = NULL,
   info_plus <- outPlus$INFO
   alpha_plus <- matrix(outPlus$ALPHA, nrow = p + 1, ncol = nQ)
   w_plus <- matrix(outPlus$WINT, nrow = n, ncol = nQ)
-  
+  alpha_plus[is.nan(alpha_plus)] <- NA
+  w_plus[is.nan(w_plus)] <- NA
+
   # Minus side for outcome quantiles -- MODIFIED
   outMinus <- .Fortran("locweights",
                        X = as.double(X_centered),
@@ -344,7 +346,9 @@ r3d <- function(X, Y_list, T = NULL,
   info_minus <- outMinus$INFO
   alpha_minus <- matrix(outMinus$ALPHA, nrow = p + 1, ncol = nQ)
   w_minus <- matrix(outMinus$WINT, nrow = n, ncol = nQ)
-  
+  alpha_minus[is.nan(alpha_minus)] <- NA
+  w_minus[is.nan(w_minus)] <- NA
+
   if (info_plus != 0) warning("locweights: plus side singular system? info=", info_plus)
   if (info_minus != 0) warning("locweights: minus side singular system? info=", info_minus)
   

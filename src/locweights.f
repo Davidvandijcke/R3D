@@ -20,7 +20,14 @@ C
 C  Outputs:
 C    ALPHA((P+1)*NQ): the local-poly regression coefficients for each q, flat array
 C    WINT(N*NQ): intercept weights for each observation i and quantile q, flat array
-C    INFO: =0 if success, !=0 if singular
+C    INFO: =0 if success, <0 if error:
+C           -94 N < dim (too few observations for polynomial order)
+C           -95 NQ < 1 (no quantiles requested)
+C           -96 invalid SIDE (must be 0 or 1)
+C           -97 zero or negative bandwidth
+C           -98 unknown kernel type
+C           -99 polynomial degree exceeds MAXDIM
+C           positive: singular system in DGETRF/DGETRS (per-quantile cycle)
 C
       implicit none
 C     Input/output variables
@@ -42,19 +49,36 @@ C     Local variables
       double precision basis(MAXDIM)
       double precision w_i, xx, u
       integer IPIV(MAXDIM)
-      double precision w_int  ! Added declaration
+      double precision w_int
       double precision ZERO, ONE
       parameter (ZERO = 0.0d0, ONE = 1.0d0)
       character TRANS
       parameter (TRANS = 'N')
+      double precision W(N)   ! F4: kernel weight cache to avoid recomputation
+      double precision FZERO  ! For runtime NaN (avoids compile-time constant error)
 C
 C     Initialize
       INFO = 0
       dim = P + 1
-      
+      FZERO = 0.0d0
+
 C     Basic dimension check
       if (dim .gt. MAXDIM) then
          INFO = -99
+         return
+      endif
+C
+C     F5: Input validation
+      if (SIDE .ne. 0 .and. SIDE .ne. 1) then
+         INFO = -96
+         return
+      endif
+      if (NQ .lt. 1) then
+         INFO = -95
+         return
+      endif
+      if (N .lt. dim) then
+         INFO = -94
          return
       endif
 C
@@ -62,7 +86,7 @@ C     Zero out result arrays
       do i = 1, (P+1)*NQ
          ALPHA(i) = ZERO
       enddo
-      
+
       do i = 1, N*NQ
          WINT(i) = ZERO
       enddo
@@ -76,7 +100,13 @@ C        1. Reset the matrix and RHS for each quantile
             enddo
             RHS(i) = ZERO
          enddo
-         
+C
+C        F2: Guard against zero or negative bandwidth (divide-by-zero)
+         if (H(q) .le. ZERO) then
+            INFO = -97
+            return
+         endif
+C
 C        2. Accumulate X'WX and X'WY for this quantile q
          do i = 1, N
 C           Compute kernel weight based on X(i)/H(q) and kernel type
@@ -114,6 +144,9 @@ C           Apply side restriction
                w_i = ZERO
             endif
 C
+C           F4: Cache final kernel weight for reuse in intercept pass
+            W(i) = w_i
+C
 C           Skip if zero weight
             if (w_i .eq. ZERO) then
                continue
@@ -124,14 +157,14 @@ C              Compute basis functions using bandwidth for this quantile
                do k = 2, dim
                   basis(k) = basis(k-1) * xx
                enddo
-               
+
 C              Accumulate X'WX
                do j = 1, dim
                   do k = 1, dim
                      MAT(j,k) = MAT(j,k) + w_i * basis(j) * basis(k)
                   enddo
                enddo
-               
+
 C              Accumulate X'WY using column-major indexing
                idx = (q-1)*N + i
                do j = 1, dim
@@ -139,62 +172,43 @@ C              Accumulate X'WY using column-major indexing
                enddo
             endif
          enddo
-         
+
 C        3. Solve the system for this quantile
          call DGETRF(dim, dim, MAT, MAXDIM, IPIV, INFO)
          if (INFO .ne. 0) then
-            return  ! Singular matrix
+C           F3: Singular system -- mark this quantile NaN and cycle to next
+            INFO = 0
+            do j = 1, dim
+               jdx = (q-1)*dim + j
+               ALPHA(jdx) = FZERO/FZERO
+            enddo
+            do i = 1, N
+               idx = (q-1)*N + i
+               WINT(idx) = FZERO/FZERO
+            enddo
+            cycle
          endif
-         
+
          call DGETRS(TRANS, dim, 1, MAT, MAXDIM, IPIV, RHS, dim, INFO)
-         
+
 C        4. Store the coefficients
          do j = 1, dim
             jdx = (q-1)*dim + j
             ALPHA(jdx) = RHS(j)
          enddo
-         
+
 C        5. Compute intercept weights using inverse row
          do j = 1, dim
             RHS(j) = ZERO
          enddo
          RHS(1) = ONE
-         
+
          call DGETRS(TRANS, dim, 1, MAT, MAXDIM, IPIV, RHS, dim, INFO)
-         
+
 C           Compute intercept weights for each observation
          do i = 1, N
-C           Recompute kernel weight (same as above)
-            u = X(i) / H(q)
-            if (KERNEL_TYPE .eq. 1) then
-               if (abs(u) .le. ONE) then
-                  w_i = ONE - abs(u)
-               else
-                  w_i = ZERO
-               endif
-            else if (KERNEL_TYPE .eq. 2) then
-               if (abs(u) .le. ONE) then
-                  w_i = 0.75d0 * (ONE - u*u)
-               else
-                  w_i = ZERO
-               endif
-            else if (KERNEL_TYPE .eq. 3) then
-               if (abs(u) .le. ONE) then
-                  w_i = 0.5d0
-               else
-                  w_i = ZERO
-               endif
-            else
-               INFO = -98
-               return
-            endif
-C
-C           Apply side restriction
-            if (SIDE .eq. 1 .and. X(i) .lt. ZERO) then
-               w_i = ZERO
-            else if (SIDE .eq. 0 .and. X(i) .ge. ZERO) then
-               w_i = ZERO
-            endif
+C           F4: Reuse cached kernel weight from first pass
+            w_i = W(i)
 C
 C           Skip if zero weight
             if (w_i .eq. ZERO) then
@@ -206,16 +220,16 @@ C              Recompute basis using bandwidth for this quantile
                do k = 2, dim
                   basis(k) = basis(k-1) * xx
                enddo
-               
+
 C              Dot product with first row of inverse
                w_int = ZERO
                do k = 1, dim
                   w_int = w_int + RHS(k) * basis(k)
                enddo
-               
+
 C              Scale by kernel weight
                w_int = w_int * w_i
-               
+
 C              Store in output array
                idx = (q-1)*N + i
                WINT(idx) = w_int

@@ -416,6 +416,10 @@ r3d_bwselect <- function(X, Y_list, T = NULL,
   alpha_minus <- matrix(outMinus$ALPHA, nrow = s + 1, ncol = nQ)
   w_plus <- matrix(outPlus$WINT, nrow = n, ncol = nQ)
   w_minus <- matrix(outMinus$WINT, nrow = n, ncol = nQ)
+  alpha_plus[is.nan(alpha_plus)] <- NA
+  alpha_minus[is.nan(alpha_minus)] <- NA
+  w_plus[is.nan(w_plus)] <- NA
+  w_minus[is.nan(w_minus)] <- NA
   
   # For fuzzy design, we need to do the same for T
   if (fuzzy) {
