@@ -449,6 +449,7 @@ void r3d_bandwidth_select(string scalar xvar, string scalar Qmat,
         rc_plus = r3d_plugin_locweights(X, Q, h_pilot_vec, s, kernel_type, 1, alpha_plus_pilot, w_plus_pilot)
         rc_minus = r3d_plugin_locweights(X, Q, h_pilot_vec, s, kernel_type, 0, alpha_minus_pilot, w_minus_pilot)
         if (rc_plus != 0 | rc_minus != 0) {
+            printf("{txt}Note: plugin failed (rc=%g), falling back to Mata\n", max((rc_plus, rc_minus)))
             st_global("R3D_USE_PLUGIN", "0")
             st_global("R3D_PLUGIN_NAME", "")
             r3d_locpoly(X, Q, h_pilot_vec, s, kernel_type, 1, alpha_plus_pilot, w_plus_pilot)
@@ -467,6 +468,7 @@ void r3d_bandwidth_select(string scalar xvar, string scalar Qmat,
             rc_tplus = r3d_plugin_locweights(X, T, h_den_vec, s, kernel_type, 1, alphaT_plus_pilot, wT_plus_pilot)
             rc_tminus = r3d_plugin_locweights(X, T, h_den_vec, s, kernel_type, 0, alphaT_minus_pilot, wT_minus_pilot)
             if (rc_tplus != 0 | rc_tminus != 0) {
+                printf("{txt}Note: plugin failed (rc=%g), falling back to Mata\n", max((rc_tplus, rc_tminus)))
                 st_global("R3D_USE_PLUGIN", "0")
                 st_global("R3D_PLUGIN_NAME", "")
                 r3d_locpoly(X, T, h_den_vec, s, kernel_type, 1, alphaT_plus_pilot, wT_plus_pilot)
@@ -657,7 +659,7 @@ void r3d_locpoly(real colvector X, real matrix Y, real matrix h_mat,
     real matrix XWX, XWY
     real colvector basis, e1, first_row_inv
     real scalar u, w_i, w_int
-    real scalar h_j
+    real scalar h_j, rcond_val
     real colvector IPIV
 
     n = rows(X)
@@ -717,8 +719,9 @@ void r3d_locpoly(real colvector X, real matrix Y, real matrix h_mat,
             }
         }
 
-        // Solve for coefficients
-        if (det(XWX) != 0) {
+        // Solve for coefficients (use reciprocal condition number for robust singularity check)
+        rcond_val = 1/cond(XWX)
+        if (rcond_val > epsilon(1)) {
             alpha[,j] = lusolve(XWX, XWY)
 
             // Compute first row of (X'WX)^{-1} = solve(XWX, e1)
@@ -869,6 +872,7 @@ void r3d_estimate_core(string scalar method,
         rc_plus = r3d_plugin_locweights(X, Q, h_num_vec, p, kernel_type, 1, alpha_plus, w_plus)
         rc_minus = r3d_plugin_locweights(X, Q, h_num_vec, p, kernel_type, 0, alpha_minus, w_minus)
         if (rc_plus != 0 | rc_minus != 0) {
+            printf("{txt}Note: plugin failed (rc=%g), falling back to Mata\n", max((rc_plus, rc_minus)))
             st_global("R3D_USE_PLUGIN", "0")
             st_global("R3D_PLUGIN_NAME", "")
             r3d_locpoly(X, Q, h_num_vec, p, kernel_type, 1, alpha_plus, w_plus)
@@ -892,6 +896,7 @@ void r3d_estimate_core(string scalar method,
             rc_tplus = r3d_plugin_locweights(X, T, h_den_vec, p, kernel_type, 1, alpha_plus_t, w_plus_t)
             rc_tminus = r3d_plugin_locweights(X, T, h_den_vec, p, kernel_type, 0, alpha_minus_t, w_minus_t)
             if (rc_tplus != 0 | rc_tminus != 0) {
+                printf("{txt}Note: plugin failed (rc=%g), falling back to Mata\n", max((rc_tplus, rc_tminus)))
                 st_global("R3D_USE_PLUGIN", "0")
                 st_global("R3D_PLUGIN_NAME", "")
                 r3d_locpoly(X, T, h_den_vec, p, kernel_type, 1, alpha_plus_t, w_plus_t)
@@ -1424,10 +1429,10 @@ real scalar r3d_gini_from_quantile(real rowvector quantiles, real rowvector qfun
     q = quantiles
     qf = qfunc
 
-    // Add endpoint at 0 if missing (match R implementation)
+    // Add endpoint at 0 if missing (Lorenz curve starts at origin)
     if (q[1] > 0) {
         q  = (0, q)
-        qf = (qf[1], qf)
+        qf = (0, qf)
     }
     // Add endpoint at 1 if missing
     if (q[cols(q)] < 1) {
