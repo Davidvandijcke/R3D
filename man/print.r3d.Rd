@@ -24,8 +24,12 @@ This function is invoked automatically when an \code{r3d} object is printed on t
 e.g., simply by typing its name. For a more detailed summary, use \code{\link{summary.r3d}}.
 }
 \examples{
-\dontrun{
-  fit <- r3d(X, Y_list, boot=TRUE)
+\donttest{
+  set.seed(42)
+  n <- 50
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + 2 * (X[i] >= 0)))
+  fit <- r3d(X, Y_list, cutoff = 0, method = "simple", bandwidths = 0.5)
   print(fit)
 }
 

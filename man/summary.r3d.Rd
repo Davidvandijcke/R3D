@@ -36,9 +36,13 @@ By default, prints:
 }
 }
 \examples{
-\dontrun{
-  fit <- r3d(X, Y_list, boot=TRUE)
-  summary(fit, samples=c(0.25, 0.75))
+\donttest{
+  set.seed(42)
+  n <- 50
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + 2 * (X[i] >= 0)))
+  fit <- r3d(X, Y_list, cutoff = 0, method = "simple", bandwidths = 0.5)
+  summary(fit, samples = c(0.25, 0.75))
 }
 
 }

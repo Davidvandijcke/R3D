@@ -55,9 +55,13 @@ contains \code{cb_lower} and \code{cb_upper} for uniform confidence bands.
 These bands are added to the plot if available.
 }
 \examples{
-\dontrun{
-  fit <- r3d(X, Y_list, boot=TRUE)
-  plot(fit, main="Distributional RD Effects", ref_line=TRUE)
+\donttest{
+  set.seed(42)
+  n <- 50
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + 2 * (X[i] >= 0)))
+  fit <- r3d(X, Y_list, cutoff = 0, method = "simple", bandwidths = 0.5)
+  plot(fit, main = "Distributional RD Effects", ref_line = TRUE)
 }
 
 }

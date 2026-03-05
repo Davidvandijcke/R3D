@@ -92,6 +92,17 @@ will perform each test on each specified range, returning results for all combin
 The Gini test examines whether there is a statistically significant difference between
 the Gini coefficients of the estimated quantile functions above and below the cutoff.
 }
+\examples{
+\donttest{
+  set.seed(42)
+  n <- 50
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + 2 * (X[i] >= 0)))
+  fit <- r3d(X, Y_list, cutoff = 0, method = "simple", bandwidths = 0.5, boot = FALSE)
+  boot_out <- r3d_bootstrap(fit, X = X, Y_list = Y_list, B = 50)
+}
+
+}
 \seealso{
 \code{\link{r3d}}, \code{\link{plot.r3d}}, \code{\link{summary.r3d}}
 }

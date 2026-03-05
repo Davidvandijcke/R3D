@@ -48,6 +48,15 @@
 #' @references
 #' \insertAllCited{}
 #'
+#' @examples
+#' \donttest{
+#'   set.seed(42)
+#'   n <- 80
+#'   X <- runif(n, -1, 1)
+#'   Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + 2 * (X[i] >= 0)))
+#'   bw <- r3d_bwselect(X, Y_list, method = "simple")
+#' }
+#'
 #' @export
 r3d_bwselect <- function(X, Y_list, T = NULL,
                          q_grid = seq(0.1, 0.9, 0.1),
