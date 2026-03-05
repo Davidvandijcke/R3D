@@ -104,13 +104,23 @@ program define r3d_bootstrap, rclass
     local e2_arg ""
     if `is_fuzzy' local e2_arg "`E2'"
 
+    local w_t_plus_arg ""
+    local w_t_minus_arg ""
+    if `is_fuzzy' {
+        local w_t_plus_arg "`W_T_PLUS'"
+        local w_t_minus_arg "`W_T_MINUS'"
+    }
+
+    local seed_arg = cond(`seed' != -1, `seed', .)
+
     mata: r3d_bootstrap("`x_centered'", "", "`tvarname'", "`HNUM'", `h_den_scalar', ///
         `polynomial', `kernel_type', `reps', `level_val', ///
         "`ALPHA_PLUS'", "`ALPHA_MINUS'", "`W_PLUS'", "`W_MINUS'", ///
         "`E1'", "`e2_arg'", ///
         "`INT_PLUS'", "`INT_MINUS'", "`TAU_ORIG'", "`DENOM'", ///
         `method_code', "`quantiles_str'", "`tests_clean'", "`testranges_clean'", ///
-        "`bs_results'", "`pvals'", "`esample'" , `is_fuzzy', "`xi_mat_name'")
+        "`bs_results'", "`pvals'", "`esample'", `is_fuzzy', ///
+        "`w_t_plus_arg'", "`w_t_minus_arg'", "`xi_mat_name'", `seed_arg')
 
     matrix `cb_lower' = r(cb_lower)
     matrix `cb_upper' = r(cb_upper)

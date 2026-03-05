@@ -95,12 +95,25 @@ void r3d_compute_quantiles(string scalar yvars, string scalar quantiles_str,
                 cumw = cumw / cumw[k]
 
                 for (j = 1; j <= nq; j++) {
-                    // Find index where cumulative weight exceeds quantile
-                    for (idx_lo = 1; idx_lo <= k; idx_lo++) {
-                        if (cumw[idx_lo] >= q_grid[j]) break
+                    // Find first index where cumulative weight >= quantile
+                    for (idx_hi = 1; idx_hi <= k; idx_hi++) {
+                        if (cumw[idx_hi] >= q_grid[j]) break
                     }
-                    if (idx_lo > k) idx_lo = k
-                    Q[i,j] = sorted[idx_lo,1]
+                    if (idx_hi > k) idx_hi = k
+                    idx_lo = idx_hi - 1
+                    if (idx_lo < 1) {
+                        Q[i,j] = sorted[idx_hi,1]
+                    }
+                    else {
+                        // Linear interpolation mirroring unweighted type-7 logic
+                        if (cumw[idx_hi] > cumw[idx_lo]) {
+                            frac = (q_grid[j] - cumw[idx_lo]) / (cumw[idx_hi] - cumw[idx_lo])
+                        }
+                        else {
+                            frac = 0
+                        }
+                        Q[i,j] = sorted[idx_lo,1] * (1 - frac) + sorted[idx_hi,1] * frac
+                    }
                 }
             }
             else {
@@ -226,7 +239,7 @@ real rowvector r3d_fit_global_poly(real colvector Y, real colvector X, real scal
 
     XtX = cross(Xpoly, Xpoly)
 
-    if (det(XtX) != 0) {
+    if (abs(det(XtX)) > 1e-10) {
         coefs = lusolve(XtX, cross(Xpoly, Y))
 
         // Extract derivatives adjusted by factorial
@@ -320,6 +333,7 @@ void r3d_bandwidth_select(string scalar xvar, string scalar Qmat,
 
     if (is_fuzzy) {
         st_view(T, ., tvar, touse)
+        assert(cols(T) == 1)
     }
 
     sigma_X = sqrt(r3d_variance(X))
@@ -435,6 +449,7 @@ void r3d_bandwidth_select(string scalar xvar, string scalar Qmat,
         if (!(pilot_h_den > 0)) {
             pilot_h_den = 1.06 * sigma_X * n^(-1 / (2 * s + 1))
         }
+        assert(pilot_h_den > 0)
     }
 
     h_pilot_vec = pilot_h_num
@@ -718,7 +733,7 @@ void r3d_locpoly(real colvector X, real matrix Y, real matrix h_mat,
         }
 
         // Solve for coefficients
-        if (det(XWX) != 0) {
+        if (abs(det(XWX)) > 1e-10) {
             alpha[,j] = lusolve(XWX, XWY)
 
             // Compute first row of (X'WX)^{-1} = solve(XWX, e1)
@@ -1130,13 +1145,15 @@ void r3d_bootstrap(string scalar xvar, string scalar Qmat, string scalar tvar,
                   string scalar tests_str, string scalar test_ranges_str,
                   string scalar bs_results_name, string scalar pvals_name,
                   string scalar touse, real scalar is_fuzzy,
-                  | string scalar xi_mat_path)
+                  | string scalar w_t_plus_name, string scalar w_t_minus_name,
+                  string scalar xi_mat_path, real scalar seed_val)
 {
     real matrix X
     real scalar n, nq, b, j, r
     real matrix h_num_vec
     real matrix alpha_plus, alpha_minus, w_plus, w_minus
     real matrix e1_mat, e2_mat
+    real matrix w_t_plus, w_t_minus
     real rowvector int_plus, int_minus, tau_orig, num_diff
     real scalar denominator
     real matrix e1_w_plus, e1_w_minus, e2_w_plus, e2_w_minus
@@ -1172,13 +1189,16 @@ void r3d_bootstrap(string scalar xvar, string scalar Qmat, string scalar tvar,
     real rowvector boot_plus, boot_minus
     real scalar idx_gini, crit_gini, p_gini
 
+    // Apply seed if provided (enables reproducibility)
+    if (args() >= 31 & seed_val < .) rseed(seed_val)
+
     st_view(X, ., xvar, touse)
     n = rows(X)
 
     // Load pre-generated xi matrix if path provided
     use_xi_mat = 0
     xi_mat_data = J(0, 0, .)
-    if (args() >= 28 & xi_mat_path != "") {
+    if (args() >= 30 & xi_mat_path != "") {
         xi_mat_data = st_matrix(xi_mat_path)
         if (rows(xi_mat_data) == n) {
             use_xi_mat = 1
@@ -1214,8 +1234,17 @@ void r3d_bootstrap(string scalar xvar, string scalar Qmat, string scalar tvar,
 
     if (is_fuzzy) {
         e2_mat = st_matrix(e2_name)
-        e2_w_plus = e2_mat :* w_plus
-        e2_w_minus = e2_mat :* w_minus
+        if (args() >= 28 & w_t_plus_name != "") {
+            // Use treatment-side kernel weights (h_den bandwidth) for delta-method linearization
+            w_t_plus = st_matrix(w_t_plus_name)
+            w_t_minus = st_matrix(w_t_minus_name)
+            e2_w_plus = e2_mat :* (w_t_plus * J(1,nq,1))
+            e2_w_minus = e2_mat :* (w_t_minus * J(1,nq,1))
+        }
+        else {
+            e2_w_plus = e2_mat :* w_plus
+            e2_w_minus = e2_mat :* w_minus
+        }
     }
 
     num_diff = int_plus - int_minus
@@ -1315,6 +1344,9 @@ void r3d_bootstrap(string scalar xvar, string scalar Qmat, string scalar tvar,
             range_pairs[r,1] = range_tokens[idx]
             range_pairs[r,2] = range_tokens[idx+1]
             idx = idx + 2
+        }
+        if (n_pairs > 1) {
+            errprintf("r3d_bootstrap: multiple test ranges supplied; only first range used\n")
         }
     }
 
@@ -1466,51 +1498,14 @@ real scalar r3d_gini_from_quantile(real rowvector quantiles, real rowvector qfun
 }
 
 // Test for Gini coefficient difference
+// NOTE: This stub is intentionally unimplemented.
+// Use r3d_bootstrap with tests("gini") for proper Gini inference.
 void r3d_test_gini(string scalar xvar, string scalar Qmat,
                    real scalar cutoff, string scalar touse,
                    string scalar pval_name)
 {
-    real matrix X, Q
-    real scalar n, nq, gini_plus, gini_minus, diff, i, j
-    real rowvector quantiles, qfunc_plus, qfunc_minus
-    real colvector idx_plus, idx_minus
-
-    // Get data
-    st_view(X, ., xvar, touse)
-    Q = st_matrix(Qmat)
-    n = rows(X)
-    nq = cols(Q)
-
-    // Create quantile grid
-    quantiles = J(1, nq, 0)
-    for (i = 1; i <= nq; i++) {
-        quantiles[i] = i / (nq + 1)
-    }
-
-    // Compute average quantile functions above and below cutoff
-    idx_plus = (X :>= 0)
-    idx_minus = (X :< 0)
-
-    qfunc_plus = J(1, nq, 0)
-    qfunc_minus = J(1, nq, 0)
-
-    for (j = 1; j <= nq; j++) {
-        qfunc_plus[j] = mean(select(Q[,j], idx_plus))
-        qfunc_minus[j] = mean(select(Q[,j], idx_minus))
-    }
-
-    // Calculate Gini coefficients
-    gini_plus = r3d_gini_from_quantile(quantiles, qfunc_plus)
-    gini_minus = r3d_gini_from_quantile(quantiles, qfunc_minus)
-
-    // Difference
-    diff = gini_plus - gini_minus
-
-    // Store results (p-value would need bootstrap for proper inference)
-    st_numscalar(pval_name, 0.5)  // Placeholder
-    st_numscalar("r(gini_plus)", gini_plus)
-    st_numscalar("r(gini_minus)", gini_minus)
-    st_numscalar("r(gini_diff)", diff)
+    errprintf("r3d_test_gini is not implemented; use r3d_bootstrap for Gini inference\n")
+    error(9999)
 }
 
 // ============================================================================
@@ -1518,34 +1513,44 @@ void r3d_test_gini(string scalar xvar, string scalar Qmat,
 // ============================================================================
 
 // Load a CSV file (with header row) into a numeric matrix
+// Uses two-pass approach to pre-allocate, avoiding O(n^2) row-append cost
 real matrix _r3d_load_csv(string scalar filepath)
 {
-    real scalar fh, nc
+    real scalar fh, nc, n_rows, r
     string scalar line
     string rowvector tokens_str
     real matrix data
-    real rowvector row_data
 
+    // Counting pass: determine dimensions
     fh = fopen(filepath, "r")
-
-    // Skip header
-    line = fget(fh)
-
-    // Read all lines
+    line = fget(fh)  // Skip header
+    n_rows = 0
     nc = 0
-    data = J(0, 0, .)
-
     while ((line = fget(fh)) != J(0, 0, "")) {
         tokens_str = tokens(subinstr(line, ",", " ", .))
-        if (nc == 0) {
-            nc = cols(tokens_str)
-            data = J(0, nc, .)
-        }
-        row_data = strtoreal(tokens_str)
-        data = data \ row_data
+        if (nc == 0 & cols(tokens_str) > 0) nc = cols(tokens_str)
+        n_rows++
     }
-
     fclose(fh)
+
+    if (n_rows == 0 | nc == 0) return(J(0, 0, .))
+
+    // Pre-allocate
+    data = J(n_rows, nc, .)
+
+    // Fill pass
+    fh = fopen(filepath, "r")
+    line = fget(fh)  // Skip header
+    r = 0
+    while ((line = fget(fh)) != J(0, 0, "")) {
+        tokens_str = tokens(subinstr(line, ",", " ", .))
+        r++
+        if (r <= n_rows & cols(tokens_str) == nc) {
+            data[r,] = strtoreal(tokens_str)
+        }
+    }
+    fclose(fh)
+
     return(data)
 }
 
