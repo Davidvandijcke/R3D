@@ -146,7 +146,9 @@ r3d <- function(X, Y_list, T = NULL,
   method <- match.arg(method)
   call <- match.call(expand.dots=FALSE)
   kernel_fun <- match.arg(kernel_fun)
-  
+
+  if (p >= 10) stop("p must be less than 10 (Fortran MAXDIM limit)")
+
   # Handle multiple test options
   if (is.character(test) && length(test) == 1) {
     test <- match.arg(test, choices = c("none", "nullity", "homogeneity", "gini"))

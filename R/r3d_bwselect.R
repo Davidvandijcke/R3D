@@ -63,7 +63,9 @@ r3d_bwselect <- function(X, Y_list, T = NULL,
   method <- match.arg(method)
   n <- length(X)
   nQ <- length(q_grid)
-  
+
+  if (p >= 10) stop("p must be less than 10 (Fortran MAXDIM limit)")
+
   if (fuzzy && is.null(T)) stop("Fuzzy design requires treatment variable T.")
   
   # Re-center running variable

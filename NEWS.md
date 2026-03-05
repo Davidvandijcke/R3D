@@ -1,5 +1,13 @@
 ## R3D 0.1.1 (development)
 
+### Build System
+
+* Removed `PKG_FFLAGS = -O3` from `src/Makevars.win` to comply with CRAN policy on not overriding toolchain optimization defaults
+
+### Bug Fixes
+
+* Added early `stop()` in `r3d()` and `r3d_bwselect()` when `p >= 10`, preventing silent all-zero results from the Fortran `MAXDIM` limit
+
 ### New Features
 
 * Added `xi_mat` parameter to `r3d_bootstrap()` for deterministic bootstrap with pre-generated multiplier draws (enables cross-platform equivalence testing)
