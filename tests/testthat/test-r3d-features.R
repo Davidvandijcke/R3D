@@ -803,6 +803,105 @@ test_that("Bootstrap with seed produces identical results across two calls", {
   expect_equal(bo1$crit_val,  bo2$crit_val)
 })
 
+###############################################################################
+# 10) r3d_methods.R review fixes
+###############################################################################
+
+test_that("summary.r3d with boot_out having only test_results (no cb_lower) prints without error", {
+  set.seed(5001)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  out <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0,
+             method = "simple", p = 1, boot = FALSE)
+  # Manually attach a boot_out that has test_results but no cb_lower/cb_upper
+  out$boot_out <- list(
+    test_results = list(
+      nullity = list(
+        full = list(test_stat = 1.2, test_crit_val = 2.0, p_value = 0.3,
+                    description = "H0 not rejected")
+      )
+    )
+  )
+  # Should not error and should not print a broken aggregation table
+  summ_out <- expect_no_error(capture.output(summary(out)))
+  expect_true(any(grepl("Hypothesis Test Results", summ_out, fixed = TRUE)))
+  expect_false(any(grepl("Aggregated distributional effects", summ_out, fixed = TRUE)))
+})
+
+test_that("print.r3d with boot_taus as a vector prints numeric replication count (not NULL)", {
+  set.seed(5002)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  out <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0,
+             method = "simple", p = 1, boot = FALSE)
+  # boot_taus as a vector (single quantile): NCOL() returns 1 (not NULL like ncol())
+  out$boot_out <- list(boot_taus = c(0.1, 0.2, 0.3, 0.4, 0.5))
+  print_out <- capture.output(print(out))
+  # Should not say "NULL replications"
+  expect_false(any(grepl("NULL replications", print_out, fixed = TRUE)))
+  # Should print a numeric (NCOL returns 1 for a vector, no space before "replications" due to sep="")
+  expect_true(any(grepl("Bootstrap: YES \\([0-9]+replications\\)", print_out)))
+})
+
+test_that("summary.r3d and print.r3d for frechet with scalar h_used display numeric bandwidth", {
+  set.seed(5003)
+  test_data <- create_test_data(n = 50, sample_size = 20, fuzzy = FALSE)
+  out <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0,
+             method = "frechet", p = 1, boot = FALSE)
+  # summary should print a numeric bandwidth, not empty/garbled
+  summ_out <- capture.output(summary(out))
+  expect_true(any(grepl("Single IMSE bandwidth:", summ_out, fixed = TRUE)))
+  bw_line <- grep("Single IMSE bandwidth:", summ_out, fixed = TRUE, value = TRUE)
+  expect_true(grepl("[0-9]", bw_line))
+
+  # print should also show numeric bandwidth
+  print_out <- capture.output(print(out))
+  expect_true(any(grepl("Bandwidth: IMSE-optimal =", print_out, fixed = TRUE)))
+  bw_line2 <- grep("Bandwidth: IMSE-optimal =", print_out, fixed = TRUE, value = TRUE)
+  expect_true(grepl("[0-9]", bw_line2))
+})
+
+test_that("plot.r3d with boot_out having only test_results produces plot without error", {
+  set.seed(5004)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  out <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0,
+             method = "simple", p = 1, boot = FALSE)
+  out$boot_out <- list(
+    test_results = list(
+      nullity = list(
+        full = list(test_stat = 1.0, test_crit_val = 2.0, p_value = 0.4,
+                    description = "H0 not rejected")
+      )
+    )
+  )
+  pdf(NULL)
+  expect_no_error(plot(out))
+  dev.off()
+})
+
+test_that("aggregation loop uses non-overlapping intervals (boundary quantile in exactly one interval)", {
+  set.seed(5005)
+  test_data <- create_test_data(n = 50, sample_size = 30, fuzzy = FALSE)
+  q_grid <- c(0.25, 0.5, 0.75)
+  out <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0,
+             method = "simple", p = 1, q_grid = q_grid,
+             boot = TRUE, boot_reps = 5, test = "none")
+
+  samples <- c(0.5)
+  s0 <- c(0, samples, 1)
+  # Count how many times each q_grid value appears across all interval selections
+  counts <- integer(length(q_grid))
+  for (i in seq_len(length(s0) - 1)) {
+    from <- s0[i]; to <- s0[i + 1]
+    sel <- if (i < length(s0) - 1) {
+      which(q_grid >= from & q_grid < to)
+    } else {
+      which(q_grid >= from & q_grid <= to)
+    }
+    counts[sel] <- counts[sel] + 1L
+  }
+  # Each q_grid point should appear in exactly one interval
+  expect_true(all(counts == 1L))
+})
+
 test_that("r3d works with multiple tests including gini", {
   set.seed(3002)
   n <- 80
