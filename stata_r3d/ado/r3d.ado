@@ -6,12 +6,19 @@ program define r3d, eclass
     version 18.0
     
     // Load Mata functions: try mlib first, then compile from source
+    local mata_loaded 0
     quietly capture mata: mata which r3d_compute_quantiles
-    if _rc != 0 {
+    if _rc == 0 {
+        local mata_loaded 1
+    }
+    if !`mata_loaded' {
         mata: mata mlib index
         quietly capture mata: mata which r3d_compute_quantiles
+        if _rc == 0 {
+            local mata_loaded 1
+        }
     }
-    if _rc != 0 {
+    if !`mata_loaded' {
         quietly capture do "`c(sysdir_plus)'r/r3d_mata.mata"
         if _rc != 0 {
             quietly capture do "mata/r3d_mata.mata"
@@ -152,14 +159,14 @@ program define r3d, eclass
     // Check if fuzzy RD
     local is_fuzzy 0
     if "`fuzzy'" != "" {
-        confirm numeric variable ``fuzzy''
+        confirm numeric variable `fuzzy'
         local is_fuzzy 1
         tempvar t_centered
         quietly gen double `t_centered' = `fuzzy' if `touse'
     }
     
     if "`weights'" != "" {
-        confirm numeric variable ``weights''
+        confirm numeric variable `weights'
     }
 
     // Compute empirical quantiles for each observation
@@ -396,8 +403,8 @@ program define r3d, eclass
                 replace tau = `tau'[1,`i'] in `i'
                 replace se = `se'[1,`i'] in `i'
                 if `bootstrap' > 0 {
-                    replace ci_lower = tau - invnormal(1-(1-`level_val'/100)/2)*se in `i'
-                    replace ci_upper = tau + invnormal(1-(1-`level_val'/100)/2)*se in `i'
+                    replace ci_lower = e(cb_lower)[1,`i'] in `i'
+                    replace ci_upper = e(cb_upper)[1,`i'] in `i'
                 }
             }
         }
