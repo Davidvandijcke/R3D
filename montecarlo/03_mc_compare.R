@@ -61,11 +61,13 @@ for (dgp in dgps) {
           next
         }
 
-        tau_diffs <- c()
-        cb_diffs <- c()
-        pval_null_diffs <- c()
-        pval_homo_diffs <- c()
+        tau_diffs <- numeric(N_STATA)
+        cb_diffs <- numeric(N_STATA)
+        pval_null_diffs <- numeric(N_STATA)
+        pval_homo_diffs <- numeric(N_STATA)
         n_matched <- 0
+        n_pn <- 0L
+        n_ph <- 0L
 
         for (s in 1:N_STATA) {
           # Load Stata shared-bw result
@@ -87,12 +89,12 @@ for (dgp in dgps) {
 
           # Tau difference
           tau_diff <- max(abs(r_res$tau - stata_res$tau), na.rm = TRUE)
-          tau_diffs <- c(tau_diffs, tau_diff)
+          tau_diffs[n_matched] <- tau_diff
 
           # CB difference
           cb_diff_lo <- max(abs(r_res$cb_lower - stata_res$cb_lower), na.rm = TRUE)
           cb_diff_hi <- max(abs(r_res$cb_upper - stata_res$cb_upper), na.rm = TRUE)
-          cb_diffs <- c(cb_diffs, max(cb_diff_lo, cb_diff_hi))
+          cb_diffs[n_matched] <- max(cb_diff_lo, cb_diff_hi)
 
           # P-value differences
           stata_pv_file <- file.path(stata_dir,
@@ -101,33 +103,35 @@ for (dgp in dgps) {
           if (file.exists(stata_pv_file) && !is.null(r_pv$pval_nullity)) {
             stata_pv <- read.csv(stata_pv_file)
             if ("pval_nullity" %in% names(stata_pv) && !is.na(r_pv$pval_nullity[s])) {
-              pval_null_diffs <- c(pval_null_diffs,
-                                   abs(r_pv$pval_nullity[s] - stata_pv$pval_nullity[1]))
+              n_pn <- n_pn + 1L
+              pval_null_diffs[n_pn] <- abs(r_pv$pval_nullity[s] - stata_pv$pval_nullity[1])
             }
             if ("pval_homogeneity" %in% names(stata_pv) &&
                 !is.null(r_pv$pval_homogeneity) && !is.na(r_pv$pval_homogeneity[s])) {
-              pval_homo_diffs <- c(pval_homo_diffs,
-                                   abs(r_pv$pval_homogeneity[s] - stata_pv$pval_homogeneity[1]))
+              n_ph <- n_ph + 1L
+              pval_homo_diffs[n_ph] <- abs(r_pv$pval_homogeneity[s] - stata_pv$pval_homogeneity[1])
             }
           }
         }
 
         if (n_matched > 0) {
+          td <- tau_diffs[seq_len(n_matched)]
+          cd <- cb_diffs[seq_len(n_matched)]
           agreement_rows[[length(agreement_rows) + 1]] <- data.frame(
             cell = cell, dgp = dgp, method = method, n = n_obs, delta = delta,
             n_matched = n_matched,
-            tau_diff_mean = mean(tau_diffs),
-            tau_diff_median = median(tau_diffs),
-            tau_diff_p95 = quantile(tau_diffs, 0.95),
-            cb_diff_mean = mean(cb_diffs),
-            cb_diff_median = median(cb_diffs),
-            cb_diff_p95 = quantile(cb_diffs, 0.95),
-            pval_null_diff_mean = if (length(pval_null_diffs) > 0) mean(pval_null_diffs) else NA,
-            pval_homo_diff_mean = if (length(pval_homo_diffs) > 0) mean(pval_homo_diffs) else NA,
+            tau_diff_mean = mean(td),
+            tau_diff_median = median(td),
+            tau_diff_p95 = quantile(td, 0.95),
+            cb_diff_mean = mean(cd),
+            cb_diff_median = median(cd),
+            cb_diff_p95 = quantile(cd, 0.95),
+            pval_null_diff_mean = if (n_pn > 0) mean(pval_null_diffs[seq_len(n_pn)]) else NA,
+            pval_homo_diff_mean = if (n_ph > 0) mean(pval_homo_diffs[seq_len(n_ph)]) else NA,
             stringsAsFactors = FALSE, row.names = NULL
           )
           cat(sprintf("  %s: %d matched, tau_diff median=%.6f, p95=%.6f\n",
-                      cell, n_matched, median(tau_diffs), quantile(tau_diffs, 0.95)))
+                      cell, n_matched, median(td), quantile(td, 0.95)))
         }
       }
     }
@@ -152,6 +156,11 @@ for (dgp in dgps) {
       for (method in methods) {
         cell <- sprintf("%s_sharp_%d_d%s_%s", dgp, n_obs, delta, method)
 
+        # Initialise all metric variables to NA so stale values are never emitted
+        bias_r <- rmse_r <- cov_r <- rej_null_r <- rej_homo_r <-
+          bias_s <- rmse_s <- cov_s <- rej_null_s <- rej_homo_s <-
+          bias_so <- cov_so <- rej_null_so <- NA
+
         # True tau
         if (dgp == "dgp1") {
           true_tau <- rep(delta, NQ)
@@ -162,6 +171,12 @@ for (dgp in dgps) {
         # --- R results (full N_SIM) ---
         r_key <- cell
         r_res <- R_all[[r_key]]
+        if (!is.null(r_res) &&
+            !all(c('tau_mat', 'cb_lower_mat', 'cb_upper_mat',
+                   'pval_nullity', 'pval_homogeneity') %in% names(r_res))) {
+          cat('Skipping', cell, ': missing fields\n')
+          next
+        }
         if (!is.null(r_res)) {
           valid_r <- !is.na(r_res$tau_mat[, 1])
           n_r <- sum(valid_r)
@@ -319,6 +334,7 @@ cat("\n--- Generating LaTeX tables ---\n")
 if (nrow(summary_df) > 0) {
   tex_file <- file.path(comp_dir, "mc_tables.tex")
   sink(tex_file)
+  on.exit(sink(), add = TRUE)
 
   cat("\\begin{table}[htbp]\n")
   cat("\\centering\n")
@@ -334,8 +350,6 @@ if (nrow(summary_df) > 0) {
 
   for (i in seq_len(nrow(summary_df))) {
     r <- summary_df[i, ]
-    # Choose the relevant rejection rate based on delta
-    rej_label <- if (r$delta == 0) "Size" else "Power"
     cat(sprintf("%s & %d & %.3f & %.3f & %.3f & %.3f & %.3f & %.3f & %.3f & %.3f \\\\\n",
                 gsub("_", "\\\\_", r$cell), r$n,
                 ifelse(is.na(r$bias_R), 0, r$bias_R),
@@ -381,19 +395,19 @@ if (nrow(agreement_df) > 0) {
 }
 
 if (nrow(summary_df) > 0) {
-  # Coverage check (for delta > 0 cells)
-  cov_cells <- summary_df[summary_df$delta > 0, ]
+  # Coverage check (all delta values)
+  cov_cells <- summary_df
 
   if (nrow(cov_cells) > 0 && any(!is.na(cov_cells$coverage_R))) {
     r_cov_ok <- all(cov_cells$coverage_R[!is.na(cov_cells$coverage_R)] > 0.80, na.rm = TRUE)
-    cat(sprintf("  R coverage > 0.80 (delta>0): %s\n",
+    cat(sprintf("  R coverage > 0.80 (all delta): %s\n",
                 if (r_cov_ok) "PASS" else "FAIL"))
   }
 
   if (nrow(cov_cells) > 0 && any(!is.na(cov_cells$coverage_Stata_shared))) {
     s_cov_ok <- all(cov_cells$coverage_Stata_shared[!is.na(cov_cells$coverage_Stata_shared)] > 0.80,
                      na.rm = TRUE)
-    cat(sprintf("  Stata coverage > 0.80 (delta>0): %s\n",
+    cat(sprintf("  Stata coverage > 0.80 (all delta): %s\n",
                 if (s_cov_ok) "PASS" else "FAIL"))
   }
 
