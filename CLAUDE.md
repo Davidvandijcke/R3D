@@ -70,8 +70,7 @@ pkgdown::build_site()
 
 ## Known Issues
 
-- **`src/init.c` line 14**: Function named `R_init_YourPackageName` — should be `R_init_R3D` for proper DLL registration
-- **`src/R3D.so`** tracked in git despite `src/*.so` in `.gitignore` (committed before rule existed)
+- **`src/R3D.so`** exists on disk; excluded from git via `.gitignore` (`src/*.so` glob + explicit `src/R3D.so` entry)
 - **README.md badge URL** has `yourusername` placeholder in one badge link
 
 ## Git Workflow

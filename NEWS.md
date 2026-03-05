@@ -1,5 +1,10 @@
 ## R3D 0.1.1 (development)
 
+### Build
+
+* Removed unconditional `PKG_FFLAGS = -O3` from `src/Makevars.win` (CRAN policy §1.2.1 violation)
+* Added explicit `src/R3D.so` entry to `.gitignore` to prevent accidental tracking of compiled binary
+
 ### Documentation
 
 * Added `\donttest{}` examples to `r3d_bootstrap()` and `r3d_bwselect()` (fixes CRAN ERROR for missing examples)

@@ -4,6 +4,7 @@
 .Ruserdata
 src/*.o
 src/*.so
+src/R3D.so
 src/*.dll
 
 # Monte Carlo artifacts
