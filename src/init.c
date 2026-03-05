@@ -3,8 +3,8 @@
 #include <R_ext/Rdynload.h>
 
 /* FORTRAN routines */
-void F77_NAME(locweights)(double *X, double *YMAT, int *N, int *P, 
-              double *H, int *SIDE, double *KERNELW,
+void F77_NAME(locweights)(double *X, double *YMAT, int *N, int *P,
+              double *H, int *SIDE, int *KERNEL_TYPE,
               double *ALPHA, double *WINT, int *INFO, int *NQ);
 
 static const R_FortranMethodDef FortranEntries[] = {
