@@ -765,6 +765,75 @@ test_that("r3d works with gini test using quantile functions", {
   expect_true(abs(gini_result$gini_diff) > 0.05)
 })
 
+###############################################################################
+# 10) Fortran locweights robustness tests
+###############################################################################
+
+test_that("locweights returns INFO=-97 for zero bandwidth (no crash, no Inf)", {
+  set.seed(42)
+  N <- 10L
+  X <- as.double(runif(10, -1, 1))
+  YMAT <- as.double(rnorm(10))
+  out <- .Fortran("locweights",
+                  X = X, YMAT = YMAT, N = N, P = 1L,
+                  H = as.double(0.0),
+                  SIDE = 1L, KERNEL_TYPE = 1L,
+                  ALPHA = double(2), WINT = double(10),
+                  INFO = integer(1), NQ = 1L,
+                  PACKAGE = "R3D")
+  expect_equal(out$INFO, -97L)
+  expect_false(any(is.infinite(out$ALPHA)))
+  expect_false(any(is.infinite(out$WINT)))
+})
+
+test_that("locweights marks singular quantile NaN while other quantiles remain valid", {
+  set.seed(999)
+  N <- 20L
+  X <- as.double(runif(20, -0.5, 0.5))
+  # Two quantiles: q=1 gets tiny bandwidth (singular), q=2 gets normal bandwidth
+  YMAT <- as.double(c(rnorm(20), rnorm(20)))
+  out <- .Fortran("locweights",
+                  X = X, YMAT = YMAT, N = N, P = 0L,
+                  H = as.double(c(1e-300, 0.5)),
+                  SIDE = 1L, KERNEL_TYPE = 1L,
+                  ALPHA = double(1 * 2), WINT = double(20 * 2),
+                  INFO = integer(1), NQ = 2L,
+                  PACKAGE = "R3D")
+  ALPHA_mat <- matrix(out$ALPHA, nrow = 1, ncol = 2)
+  # q=1: singular due to vanishing bandwidth -> NaN
+  expect_true(is.nan(ALPHA_mat[1, 1]))
+  # q=2: valid bandwidth -> finite result
+  expect_true(is.finite(ALPHA_mat[1, 2]))
+})
+
+test_that("locweights returns INFO=-96 for invalid SIDE value", {
+  N <- 10L
+  X <- as.double(runif(10, -1, 1))
+  YMAT <- as.double(rnorm(10))
+  out <- .Fortran("locweights",
+                  X = X, YMAT = YMAT, N = N, P = 1L,
+                  H = as.double(0.5),
+                  SIDE = 2L, KERNEL_TYPE = 1L,
+                  ALPHA = double(2), WINT = double(10),
+                  INFO = integer(1), NQ = 1L,
+                  PACKAGE = "R3D")
+  expect_equal(out$INFO, -96L)
+})
+
+test_that("locweights Fortran routine resolves without symbol-not-found error", {
+  expect_no_error(
+    .Fortran("locweights",
+             X = as.double(c(-0.5, 0.5)),
+             YMAT = as.double(c(1.0, 2.0)),
+             N = 2L, P = 0L,
+             H = as.double(1.0),
+             SIDE = 1L, KERNEL_TYPE = 1L,
+             ALPHA = double(1), WINT = double(2),
+             INFO = integer(1), NQ = 1L,
+             PACKAGE = "R3D")
+  )
+})
+
 test_that("r3d works with multiple tests including gini", {
   set.seed(3002)
   n <- 80
