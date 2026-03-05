@@ -61,6 +61,16 @@
 #'
 #' @seealso \code{\link{r3d}}, \code{\link{plot.r3d}}, \code{\link{summary.r3d}}
 #'
+#' @examples
+#' \donttest{
+#'   set.seed(42)
+#'   n <- 50
+#'   X <- runif(n, -1, 1)
+#'   Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + 2 * (X[i] >= 0)))
+#'   fit <- r3d(X, Y_list, cutoff = 0, method = "simple", bandwidths = 0.5, boot = FALSE)
+#'   boot_out <- r3d_bootstrap(fit, X = X, Y_list = Y_list, B = 50)
+#' }
+#'
 #' @export
 r3d_bootstrap <- function(object, X, Y_list, T = NULL,
                           B = 200, alpha = 0.05,

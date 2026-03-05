@@ -28,9 +28,13 @@
 #' @seealso \code{\link{r3d}}, \code{\link{plot.r3d}}, \code{\link{print.r3d}}
 #'
 #' @examples
-#' \dontrun{
-#'   fit <- r3d(X, Y_list, boot=TRUE)
-#'   summary(fit, samples=c(0.25, 0.75))
+#' \donttest{
+#'   set.seed(42)
+#'   n <- 50
+#'   X <- runif(n, -1, 1)
+#'   Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + 2 * (X[i] >= 0)))
+#'   fit <- r3d(X, Y_list, cutoff = 0, method = "simple", bandwidths = 0.5)
+#'   summary(fit, samples = c(0.25, 0.75))
 #' }
 #'
 #' @export
@@ -180,9 +184,13 @@ summary.r3d <- function(object, samples = c(0.25, 0.5, 0.75), ...) {
 #' @seealso \code{\link{r3d}}, \code{\link{summary.r3d}}
 #'
 #' @examples
-#' \dontrun{
-#'   fit <- r3d(X, Y_list, boot=TRUE)
-#'   plot(fit, main="Distributional RD Effects", ref_line=TRUE)
+#' \donttest{
+#'   set.seed(42)
+#'   n <- 50
+#'   X <- runif(n, -1, 1)
+#'   Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + 2 * (X[i] >= 0)))
+#'   fit <- r3d(X, Y_list, cutoff = 0, method = "simple", bandwidths = 0.5)
+#'   plot(fit, main = "Distributional RD Effects", ref_line = TRUE)
 #' }
 #'
 #' @export
@@ -254,8 +262,12 @@ plot.r3d <- function(x, main=NULL, ylim=NULL, xlab="Quantile", ylab="Treatment E
 #' @return Returns the \code{x} object invisibly.
 #'
 #' @examples
-#' \dontrun{
-#'   fit <- r3d(X, Y_list, boot=TRUE)
+#' \donttest{
+#'   set.seed(42)
+#'   n <- 50
+#'   X <- runif(n, -1, 1)
+#'   Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + 2 * (X[i] >= 0)))
+#'   fit <- r3d(X, Y_list, cutoff = 0, method = "simple", bandwidths = 0.5)
 #'   print(fit)
 #' }
 #'

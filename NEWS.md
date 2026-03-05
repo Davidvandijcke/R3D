@@ -1,5 +1,11 @@
 ## R3D 0.1.1 (development)
 
+### Documentation
+
+* Added `\donttest{}` examples to `r3d_bootstrap()` and `r3d_bwselect()` (fixes CRAN ERROR for missing examples)
+* Replaced `\dontrun{}` with `\donttest{}` in `r3d()`, `plot.r3d()`, `print.r3d()`, and `summary.r3d()` examples (fixes CRAN NOTE)
+* Added `@noRd` to all internal helpers in `r3d_utils.R` to suppress NOTE about documented non-exported objects; removed orphaned `.Rd` files
+
 ### New Features
 
 * Added `xi_mat` parameter to `r3d_bootstrap()` for deterministic bootstrap with pre-generated multiplier draws (enables cross-platform equivalence testing)

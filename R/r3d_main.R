@@ -86,7 +86,7 @@
 #' @seealso \code{\link{r3d_bootstrap}}, \code{\link{plot.r3d}}, \code{\link{summary.r3d}}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   # Simulate data
 #'   set.seed(123)
 #'   n <- 100
@@ -100,16 +100,16 @@
 #'   # Example 1: Test nullity and homogeneity on full range
 #'   fit1 <- r3d(X, Y_list, T=T, cutoff=0,
 #'               method="frechet", p=2, fuzzy=TRUE,
-#'               boot=TRUE, boot_reps=200, alpha=0.05, 
+#'               boot=TRUE, boot_reps=200, alpha=0.05,
 #'               test=c("nullity", "homogeneity"))
 #'
 #'   # Example 2: Test Gini coefficient difference
-#'   fit2 <- r3d(X, Y_list, cutoff=0, method="simple", 
+#'   fit2 <- r3d(X, Y_list, cutoff=0, method="simple",
 #'               boot=TRUE, test="gini")
-#'               
+#'
 #'   # Example 3: Test on multiple ranges
-#'   fit3 <- r3d(X, Y_list, cutoff=0, 
-#'               boot=TRUE, test=c("nullity", "homogeneity", "gini"), 
+#'   fit3 <- r3d(X, Y_list, cutoff=0,
+#'               boot=TRUE, test=c("nullity", "homogeneity", "gini"),
 #'               test_ranges=list(c(0.25, 0.5, 0.75)))
 #'
 #'   # Inspect results
