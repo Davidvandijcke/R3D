@@ -44,6 +44,12 @@
     <div class="section level2">
 <h2 class="page-header" data-toc-text="0.1.1" id="r3d-011-development">R3D 0.1.1 (development)<a class="anchor" aria-label="anchor" href="#r3d-011-development"></a></h2>
 <div class="section level3">
+<h3 id="documentation-0-1-1">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-1-1"></a></h3>
+<ul><li>Added <code>\donttest{}</code> examples to <code><a href="../reference/r3d_bootstrap.html">r3d_bootstrap()</a></code> and <code><a href="../reference/r3d_bwselect.html">r3d_bwselect()</a></code> (fixes CRAN ERROR for missing examples)</li>
+<li>Replaced <code>\dontrun{}</code> with <code>\donttest{}</code> in <code><a href="../reference/r3d.html">r3d()</a></code>, <code><a href="../reference/plot.r3d.html">plot.r3d()</a></code>, <code><a href="../reference/print.r3d.html">print.r3d()</a></code>, and <code><a href="../reference/summary.r3d.html">summary.r3d()</a></code> examples (fixes CRAN NOTE)</li>
+<li>Added <code>@noRd</code> to all internal helpers in <code>r3d_utils.R</code> to suppress NOTE about documented non-exported objects; removed orphaned <code>.Rd</code> files</li>
+</ul></div>
+<div class="section level3">
 <h3 id="new-features-0-1-1">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-1-1"></a></h3>
 <ul><li>Added <code>xi_mat</code> parameter to <code><a href="../reference/r3d_bootstrap.html">r3d_bootstrap()</a></code> for deterministic bootstrap with pre-generated multiplier draws (enables cross-platform equivalence testing)</li>
 <li>Added Stata port (<code>stata_r3d/</code>) with full Mata implementation and 69-test equivalence suite</li>
