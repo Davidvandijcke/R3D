@@ -19,6 +19,12 @@ program define r3d_bootstrap, rclass
         exit 301
     }
 
+    // Guard against partial/cleared e() results
+    if rowsof(e(alpha_plus)) == 0 {
+        di as error "e(alpha_plus) not found — re-run r3d"
+        exit 301
+    }
+
     // Set RNG seed if requested
     if `seed' != -1 {
         set seed `seed'
@@ -79,7 +85,7 @@ program define r3d_bootstrap, rclass
     if `is_fuzzy' {
         local tvar = e(tvar)
         local tvarname = "`t_centered'"
-        quietly gen double `t_centered' = ``tvar'' - 0 if `esample'
+        quietly gen double `t_centered' = `tvar' if `esample'
     }
 
     tempname QUANT
@@ -91,6 +97,7 @@ program define r3d_bootstrap, rclass
 
     // Prepare containers for Mata call
     tempname bs_results pvals cb_lower cb_upper
+    matrix `bs_results' = J(`reps', colsof(`QUANT'), .)
     matrix `pvals' = J(1, 3, .)
 
     // Load xi_mat from CSV if provided
@@ -104,6 +111,7 @@ program define r3d_bootstrap, rclass
     local e2_arg ""
     if `is_fuzzy' local e2_arg "`E2'"
 
+    // Qmat unused by bootstrap (quantile grid passed via quantiles_str)
     mata: r3d_bootstrap("`x_centered'", "", "`tvarname'", "`HNUM'", `h_den_scalar', ///
         `polynomial', `kernel_type', `reps', `level_val', ///
         "`ALPHA_PLUS'", "`ALPHA_MINUS'", "`W_PLUS'", "`W_MINUS'", ///
@@ -128,7 +136,7 @@ program define r3d_bootstrap, rclass
     di as text "Tests: " as result "`tests_clean'"
     
     // Print table of effects
-    local nq = e(nquantiles)
+    local nq = colsof(`QUANT')
     di as text "{hline 78}"
     di as text "Quantile" _col(12) "Estimate" _col(24) "Boot SE" ///
         _col(36) "[`level_val'% Uniform CI]"
