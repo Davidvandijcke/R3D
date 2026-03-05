@@ -8,11 +8,11 @@ void F77_NAME(locweights)(double *X, double *YMAT, int *N, int *P,
               double *ALPHA, double *WINT, int *INFO, int *NQ);
 
 static const R_FortranMethodDef FortranEntries[] = {
-  {"locweights", (DL_FUNC) &F77_NAME(locweights), 11},
+  {"locweights", (DL_FUNC) &F77_NAME(locweights), 11}, /* 11 args: X, YMAT, N, P, H, SIDE, KERNELW, ALPHA, WINT, INFO, NQ */
   {NULL, NULL, 0}
 };
 
-void R_init_YourPackageName(DllInfo *dll) {
+void R_init_R3D(DllInfo *dll) {
   R_registerRoutines(dll, NULL, NULL, FortranEntries, NULL);
   R_useDynamicSymbols(dll, FALSE);
 }
