@@ -50,7 +50,9 @@
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-0-1-1">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-1-1"></a></h3>
-<ul><li>Fixed compound quoting bug in <code>r3d.ado</code> (lines 39-41) that caused option parsing failures when paths contained spaces</li>
+<ul><li>Fixed DLL registration: renamed <code>R_init_YourPackageName</code> to <code>R_init_R3D</code> so <code>R_registerRoutines</code> and <code>R_useDynamicSymbols</code> are called on load</li>
+<li>Fixed C/Fortran type mismatch: argument 7 of <code>locweights</code> changed from <code>double *KERNELW</code> to <code>int *KERNEL_TYPE</code> to match Fortran <code>INTEGER</code> declaration</li>
+<li>Fixed compound quoting bug in <code>r3d.ado</code> (lines 39-41) that caused option parsing failures when paths contained spaces</li>
 </ul></div>
 <div class="section level3">
 <h3 id="monte-carlo-0-1-1">Monte Carlo<a class="anchor" aria-label="anchor" href="#monte-carlo-0-1-1"></a></h3>
