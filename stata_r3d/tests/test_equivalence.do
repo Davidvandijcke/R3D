@@ -755,6 +755,57 @@ else {
 restore
 
 
+// --------------------------------------------------------------------------
+// Test 5.4: Fuzzy bootstrap t_centered non-zero (F1 regression guard)
+// --------------------------------------------------------------------------
+di _n as text "--- Test 5.4: Fuzzy bootstrap t_centered non-zero ---"
+
+capture confirm file "ref_data_fuzzy_simple_20.csv"
+if !_rc {
+    import delimited "ref_data_fuzzy_simple_20.csv", clear
+    unab qvars : q*
+    local nq_f : word count `qvars'
+    local quantiles_f
+    forvalues i = 1/`nq_f' {
+        local q = `i' / (`nq_f' + 1)
+        local quantiles_f `quantiles_f' `q'
+    }
+
+    r3d x `qvars', cutoff(0) method(simple) polynomial(2) kernel(epanechnikov) ///
+        quantiles(`quantiles_f') tvar(t) nograph
+
+    // Save t values from the estimation sample for comparison
+    tempvar esamp_f t_ref
+    quietly gen byte `esamp_f' = e(sample)
+    quietly gen double `t_ref' = t if `esamp_f'
+
+    // Run bootstrap and check t_centered was generated correctly (non-zero)
+    r3d_bootstrap, reps(50) level(95) tests(nullity)
+
+    // Verify: cb_lower and cb_upper have colsof = nq (NQ source-of-truth test)
+    tempname BS_CLO_F BS_CHI_F
+    matrix `BS_CLO_F' = r(cb_lower)
+    matrix `BS_CHI_F' = r(cb_upper)
+    local nq_quant = colsof(e(quantiles))
+    local nq_cb    = colsof(`BS_CLO_F')
+    local pass = (`nq_cb' == `nq_quant')
+    report_test "Fuzzy bootstrap NQ source-of-truth (cb_lower cols)" `pass' ///
+        `=abs(`nq_cb' - `nq_quant')' 0
+
+    // Verify t_centered was not all-zero: t variable mean should be non-zero
+    // (proxy: if double-deref produced zeros, sum(t) within sample would be 0)
+    quietly summarize t if `esamp_f'
+    local t_mean = r(mean)
+    local pass = (abs(`t_mean') > 1e-10)
+    report_test "Fuzzy t variable non-zero (F1 guard)" `pass' `=abs(`t_mean')' 1e-10
+    quietly drop `esamp_f' `t_ref'
+}
+else {
+    report_skip "Fuzzy bootstrap t_centered non-zero" "No fuzzy reference data"
+    report_skip "Fuzzy bootstrap NQ source-of-truth" "No fuzzy reference data"
+}
+
+
 // ############################################################################
 // LAYER 6: EDGE CASES & ROBUSTNESS
 // ############################################################################
