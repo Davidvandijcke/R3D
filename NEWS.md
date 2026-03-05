@@ -13,6 +13,8 @@
 
 ### Bug Fixes
 
+* Fixed fuzzy design obs selection: `e2_mat` row indices now derived from treatment-side Fortran WINT output (`outTplus$WINT`, `outTminus$WINT`) instead of the outcome-bandwidth proxy `w_plus[,1]`/`w_minus[,1]`, preventing wrong observations being included/excluded in treatment residuals
+* Raised fuzzy denominator near-zero guard from `1e-14` to `1e-8`, aligning with Stata implementation; values in `(1e-14, 1e-8)` previously produced numerically unstable estimates instead of `NA`
 * Fixed DLL registration: renamed `R_init_YourPackageName` to `R_init_R3D` so `R_registerRoutines` and `R_useDynamicSymbols` are called on load
 * Fixed C/Fortran type mismatch: argument 7 of `locweights` changed from `double *KERNELW` to `int *KERNEL_TYPE` to match Fortran `INTEGER` declaration
 * Fixed compound quoting bug in `r3d.ado` (lines 39-41) that caused option parsing failures when paths contained spaces

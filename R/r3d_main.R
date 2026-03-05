@@ -460,7 +460,7 @@ r3d <- function(X, Y_list, T = NULL,
     e2_mat <- matrix(0, nrow = n, ncol = nQ)
     
     # Plus side for T
-    idxp <- which(w_plus[, 1] > 0)  # Using first column as proxy
+    idxp <- which(outTplus$WINT > 0)
     if (length(idxp) > 0) {
       X_scaled_den <- X_centered[idxp] / h_use_den
       Xpow_p <- outer(X_scaled_den, 0:p, "^")
@@ -468,9 +468,9 @@ r3d <- function(X, Y_list, T = NULL,
       residp <- T[idxp] - fitpT
       e2_mat[idxp, ] <- matrix(rep(residp, nQ), ncol = nQ)
     }
-    
+
     # Minus side for T
-    idxm <- which(w_minus[, 1] > 0)
+    idxm <- which(outTminus$WINT > 0)
     if (length(idxm) > 0) {
       X_scaled_den <- X_centered[idxm] / h_use_den
       Xpow_m <- outer(X_scaled_den, 0:p, "^")
@@ -496,7 +496,9 @@ r3d <- function(X, Y_list, T = NULL,
   
   tau_vec <- int_plus - int_minus
   if (fuzzy) {
-    if (abs(denom_T) < 1e-14) {
+    # Threshold aligned with Stata implementation (1e-8) for numerical stability;
+    # values in (1e-14, 1e-8) are near-zero and produce unstable estimates.
+    if (abs(denom_T) < 1e-8) {
       tau_vec[] <- NA_real_
     } else {
       tau_vec <- tau_vec / denom_T
