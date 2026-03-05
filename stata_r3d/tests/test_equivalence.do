@@ -976,6 +976,90 @@ capture scalar drop __diff
 
 
 // ############################################################################
+// LAYER 7: REGRESSION TESTS FOR r3d_bwselect FIXES
+// ############################################################################
+di _n as text "{hline 78}"
+di as text "LAYER 7: REGRESSION TESTS (r3d_bwselect)"
+di as text "{hline 78}"
+
+// --------------------------------------------------------------------------
+// Test 7.1: Nested call test (F1/F2 r() ordering invariant)
+//   Invoke r3d_bwselect in a loop with another rclass program called between
+//   iterations. Verify h_num and pilot_num are consistently captured.
+// --------------------------------------------------------------------------
+di _n as text "--- Test 7.1: Nested call test (F1/F2 ordering invariant) ---"
+
+capture program drop _r3d_dummy_rclass
+program define _r3d_dummy_rclass, rclass
+    return scalar dummy = 42
+    return matrix dummy_mat = J(1,1,99)
+end
+
+preserve
+clear
+set obs 200
+set seed 12345
+gen x = rnormal(0, 1)
+gen y = rnormal(0, 1) + 0.3*(x >= 0)
+
+quietly r3d_bwselect x y, cutoff(0) method(simple) nquantiles(9)
+tempname h_base pn_base
+matrix `h_base' = r(h_num)
+matrix `pn_base' = r(pilot_num)
+
+local nested_ok = 1
+forvalues iter = 1/3 {
+    quietly r3d_bwselect x y, cutoff(0) method(simple) nquantiles(9)
+    tempname h_i pn_i
+    matrix `h_i' = r(h_num)
+    matrix `pn_i' = r(pilot_num)
+
+    // Interleave with a dummy rclass call to overwrite r()
+    _r3d_dummy_rclass
+
+    mata: st_numscalar("__hd", max(abs(st_matrix("`h_i'") - st_matrix("`h_base'"))))
+    mata: st_numscalar("__pd", max(abs(st_matrix("`pn_i'") - st_matrix("`pn_base'"))))
+    if scalar(__hd) > 1e-12 | scalar(__pd) > 1e-12 local nested_ok = 0
+    capture scalar drop __hd __pd
+}
+
+local pass = `nested_ok'
+local max_diff_nested = 1 - `pass'
+local tol_nested = 0.5
+report_test "Nested bwselect h_num/pilot_num consistent" `pass' `max_diff_nested' `tol_nested'
+restore
+
+// --------------------------------------------------------------------------
+// Test 7.2: Scalar namespace test (F5/F6)
+//   After r3d_bwselect, assert __bw_rc, __bw_min, __bw_max do NOT exist in
+//   the global scalar namespace (regression test for tempname fix).
+// --------------------------------------------------------------------------
+di _n as text "--- Test 7.2: Scalar namespace test (F5/F6) ---"
+
+preserve
+clear
+set obs 200
+set seed 99999
+gen x = rnormal(0, 1)
+gen y = rnormal(0, 1) + 0.5*(x >= 0)
+
+quietly r3d_bwselect x y, cutoff(0) method(simple) nquantiles(9)
+
+local ns_ok = 1
+capture scalar list __bw_rc
+if _rc == 0 local ns_ok = 0
+capture scalar list __bw_min
+if _rc == 0 local ns_ok = 0
+capture scalar list __bw_max
+if _rc == 0 local ns_ok = 0
+
+local pass = `ns_ok'
+local max_diff_ns = 1 - `pass'
+local tol_ns = 0.5
+report_test "No global __bw_* scalars after bwselect" `pass' `max_diff_ns' `tol_ns'
+restore
+
+// ############################################################################
 // SUMMARY
 // ############################################################################
 di _n as text "{hline 78}"

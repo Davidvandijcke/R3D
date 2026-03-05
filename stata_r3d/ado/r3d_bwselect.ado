@@ -60,8 +60,8 @@ program define r3d_bwselect, rclass
     local is_fuzzy = 0
     if "`fuzzy'" != "" {
         local is_fuzzy = 1
-        tempvar t_centered
-        quietly gen double `t_centered' = `fuzzy' if `touse'
+        tempvar t_var
+        quietly gen double `t_var' = `fuzzy' if `touse'
     }
 
     tempname Qmat
@@ -69,32 +69,38 @@ program define r3d_bwselect, rclass
     mata: r3d_compute_quantiles("`yvars'", "`quantiles'", "`touse'", "`Qmat'", "`weights'")
 
     local kernel_type = cond("`kernel'" == "triangular", 1, cond("`kernel'" == "epanechnikov", 2, 3))
-    local tvarname = cond(`is_fuzzy', "`t_centered'", "")
+    local tvarname = cond(`is_fuzzy', "`t_var'", "")
 
     di as text "Selecting bandwidth..."
     mata: r3d_bandwidth_select("`x_centered'", "`Qmat'", "`quantiles'", "`tvarname'", ///
         `polynomial', `pilot', `kernel_type', "`method'", "`touse'", `is_fuzzy', `coverage_flag', "`weights'")
 
+    // INVARIANT: all r() scalars/matrices from r3d_bandwidth_select must be
+    // captured before any subsequent Mata call that could post to r().
+    // r3d_prepare_bandwidth_matrix is safe here because it only calls
+    // st_matrix() and does not post to r().
     tempname HNUM PILOT_NUM
     matrix `HNUM' = r(h_num)
     matrix `PILOT_NUM' = r(pilot_num)
     local h_den_scalar = cond(`is_fuzzy', r(h_den), .)
     local pilot_den_scalar = cond(`is_fuzzy', r(pilot_den), .)
 
-    mata: st_numscalar("__bw_rc", r3d_prepare_bandwidth_matrix("`HNUM'", `nq', "`method'"))
-    if scalar(__bw_rc) != 0 {
+    tempname bw_rc
+    mata: st_numscalar("`bw_rc'", r3d_prepare_bandwidth_matrix("`HNUM'", `nq', "`method'"))
+    if scalar(`bw_rc') != 0 {
         di as error "Bandwidth selection failed"
-        scalar drop __bw_rc
+        scalar drop `bw_rc'
         exit 498
     }
-    scalar drop __bw_rc
-    mata: st_numscalar("__bw_min", min(st_matrix("`HNUM'")))
-    mata: st_numscalar("__bw_max", max(st_matrix("`HNUM'")))
+    scalar drop `bw_rc'
+    tempname bw_min bw_max
+    mata: st_numscalar("`bw_min'", min(st_matrix("`HNUM'")))
+    mata: st_numscalar("`bw_max'", max(st_matrix("`HNUM'")))
 
-    di as text "Bandwidth range (numerator): " as result %9.4f scalar(__bw_min) ///
-        as text " to " as result %9.4f scalar(__bw_max)
+    di as text "Bandwidth range (numerator): " as result %9.4f scalar(`bw_min') ///
+        as text " to " as result %9.4f scalar(`bw_max')
     if `is_fuzzy' di as text "Bandwidth (denominator): " as result %9.4f `h_den_scalar'
-    scalar drop __bw_min __bw_max
+    scalar drop `bw_min' `bw_max'
 
     // Return results
     tempname QGRID
