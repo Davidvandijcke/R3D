@@ -803,6 +803,115 @@ test_that("Bootstrap with seed produces identical results across two calls", {
   expect_equal(bo1$crit_val,  bo2$crit_val)
 })
 
+###############################################################################
+# 10) New regression tests for review findings
+###############################################################################
+
+test_that("F1: fuzzy RD with h_den < h_num uses T-regression bandwidth for e2_mat indices", {
+  # When h_den is much smaller than h_num, the support of wTplus/wTminus differs
+  # from w_plus[,1]/w_minus[,1]. After the fix, idxp/idxm in e2_mat must respect
+  # h_den so that T residuals are only computed for observations in its bandwidth.
+  set.seed(5001)
+  n <- 80
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(seq_len(n), function(i) rnorm(30, mean = 2 + 2 * (X[i] >= 0)))
+  T_vec <- as.numeric(X >= 0) * rbinom(n, 1, 0.8)
+
+  # Use a large h_num and a very small h_den so bandwidths differ substantially
+  h_small <- 0.15  # only a few obs near cutoff have T-side support
+  h_large <- 0.9
+
+  out <- r3d(X = X, Y_list = Y_list, T = T_vec, fuzzy = TRUE,
+             method = "simple", p = 1,
+             bandwidths = list(num = h_large, den = h_small))
+
+  expect_s3_class(out, "r3d")
+  expect_false(is.null(out$bootstrap$e2_mat))
+
+  # With the fix, T residuals outside h_den must be exactly 0
+  # Identify observations not in h_den support on the plus side
+  X_cent <- X - 0
+  wT_support_plus <- abs(X_cent) <= h_small & X_cent >= 0
+  wT_support_minus <- abs(X_cent) <= h_small & X_cent < 0
+  in_T_support <- wT_support_plus | wT_support_minus
+
+  # Rows not in T-bandwidth support should have e2_mat = 0
+  e2 <- out$bootstrap$e2_mat
+  outside_support <- !in_T_support
+  expect_true(all(e2[outside_support, 1] == 0))
+})
+
+test_that("F2: non-positive bandwidths produce a clear error", {
+  set.seed(5002)
+  n <- 40
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2))
+  T_vec <- rbinom(n, 1, 0.5)
+
+  # Zero bandwidth for num (sharp, list form)
+  expect_error(
+    r3d(X = X, Y_list = Y_list, method = "simple", p = 1,
+        bandwidths = list(num = 0)),
+    "positive"
+  )
+
+  # Negative bandwidth for num (direct form)
+  expect_error(
+    r3d(X = X, Y_list = Y_list, method = "simple", p = 1,
+        bandwidths = -0.5),
+    "positive"
+  )
+
+  # Zero bandwidth for den (fuzzy)
+  expect_error(
+    r3d(X = X, Y_list = Y_list, T = T_vec, fuzzy = TRUE,
+        method = "simple", p = 1,
+        bandwidths = list(num = 0.5, den = 0)),
+    "positive"
+  )
+})
+
+test_that("F4: r3d() return object has X/Y_list/T only in $inputs, not at top level", {
+  set.seed(5003)
+  n <- 40
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2))
+
+  out <- r3d(X = X, Y_list = Y_list, method = "simple", p = 1, boot = FALSE)
+
+  # X, Y_list, T must NOT be at the top level
+  expect_false("X" %in% names(out))
+  expect_false("Y_list" %in% names(out))
+  expect_false("T" %in% names(out))
+
+  # They must be accessible via $inputs
+  expect_equal(out$inputs$X, X)
+  expect_equal(length(out$inputs$Y_list), n)
+})
+
+test_that("F5: test=c('null','homo') partial matching works same as length-1 case", {
+  set.seed(5004)
+  n <- 40
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2))
+
+  # Partial match of a length-2 vector should work without error
+  out_multi <- r3d(X = X, Y_list = Y_list, method = "simple", p = 1,
+                   boot = TRUE, boot_reps = 5,
+                   test = c("null", "homo"), alpha = 0.2)
+
+  expect_true(!is.null(out_multi$boot_out$test_results))
+  expect_true("nullity" %in% names(out_multi$boot_out$test_results))
+  expect_true("homogeneity" %in% names(out_multi$boot_out$test_results))
+
+  # Same as explicit full names
+  out_full <- r3d(X = X, Y_list = Y_list, method = "simple", p = 1,
+                  boot = TRUE, boot_reps = 5,
+                  test = c("nullity", "homogeneity"), alpha = 0.2)
+  expect_true("nullity" %in% names(out_full$boot_out$test_results))
+  expect_true("homogeneity" %in% names(out_full$boot_out$test_results))
+})
+
 test_that("r3d works with multiple tests including gini", {
   set.seed(3002)
   n <- 80

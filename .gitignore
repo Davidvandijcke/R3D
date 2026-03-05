@@ -16,3 +16,6 @@ montecarlo/test_*.log
 # Stata build artifacts
 stata_r3d/mata/*.log
 stata_r3d/mata/*.smcl
+
+# Review pipeline artifacts
+reviews/

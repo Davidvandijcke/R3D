@@ -148,19 +148,11 @@ r3d <- function(X, Y_list, T = NULL,
   kernel_fun <- match.arg(kernel_fun)
   
   # Handle multiple test options
-  if (is.character(test) && length(test) == 1) {
-    test <- match.arg(test, choices = c("none", "nullity", "homogeneity", "gini"))
-  } else if (is.character(test) && length(test) > 1) {
-    valid_tests <- c("none", "nullity", "homogeneity", "gini")
-    if (!all(test %in% valid_tests)) {
-      stop("Invalid test option(s). Must be one or more of: 'none', 'nullity', 'homogeneity', 'gini'")
-    }
-    # Remove "none" if other options are present
-    if ("none" %in% test && length(test) > 1) {
-      test <- setdiff(test, "none")
-    }
-  } else {
-    stop("'test' must be a character vector of test types")
+  valid_tests <- c("none", "nullity", "homogeneity", "gini")
+  test <- match.arg(test, choices = valid_tests, several.ok = TRUE)
+  # Remove "none" if other options are present
+  if ("none" %in% test && length(test) > 1) {
+    test <- setdiff(test, "none")
   }
   
   # Process test_ranges
@@ -230,6 +222,8 @@ r3d <- function(X, Y_list, T = NULL,
           stop("bandwidths$num must be a scalar or a vector of length equal to q_grid.")
         }
         
+        if (any(h_star_num <= 0)) stop("bandwidths$num must be positive")
+
         # Validate denominator bandwidth
         if (is.null(h_star_den)) {
           stop("For fuzzy RDD, bandwidths$den must be provided.")
@@ -237,6 +231,7 @@ r3d <- function(X, Y_list, T = NULL,
         if (length(h_star_den) != 1) {
           stop("bandwidths$den must be a scalar.")
         }
+        if (any(h_star_den <= 0)) stop("bandwidths$den must be positive")
       } else {
         # Sharp RDD: extract numerator only
         h_star_num <- bandwidths$num
@@ -248,6 +243,7 @@ r3d <- function(X, Y_list, T = NULL,
         if (!(length(h_star_num) == 1 || length(h_star_num) == nQ)) {
           stop("bandwidths$num must be a scalar or a vector of length equal to q_grid.")
         }
+        if (any(h_star_num <= 0)) stop("bandwidths$num must be positive")
       }
     } else {
       # Direct bandwidth specification (for sharp RDD)
@@ -261,6 +257,7 @@ r3d <- function(X, Y_list, T = NULL,
       if (!(length(h_star_num) == 1 || length(h_star_num) == nQ)) {
         stop("bandwidths must be a scalar or a vector of length equal to q_grid.")
       }
+      if (any(h_star_num <= 0)) stop("bandwidths$num must be positive")
     }
   } else {
     # 1) Use automatic bandwidth selection if no bandwidths provided
@@ -371,7 +368,8 @@ r3d <- function(X, Y_list, T = NULL,
                          NQ = as.integer(1),
                          PACKAGE = "R3D")
     alphaT_plus <- matrix(outTplus$ALPHA, nrow = p + 1, ncol = 1)
-    
+    wTplus <- matrix(outTplus$WINT, nrow = n, ncol = 1)
+
     # Minus side for T
     outTminus <- .Fortran("locweights",
                           X = as.double(X_centered),
@@ -387,7 +385,8 @@ r3d <- function(X, Y_list, T = NULL,
                           NQ = as.integer(1),
                           PACKAGE = "R3D")
     alphaT_minus <- matrix(outTminus$ALPHA, nrow = p + 1, ncol = 1)
-    
+    wTminus <- matrix(outTminus$WINT, nrow = n, ncol = 1)
+
     denom_T <- alphaT_plus[1, 1] - alphaT_minus[1, 1]
     if (abs(denom_T) < 1e-14) {
       warning("Denominator in fuzzy RDD is near 0 => effects might be NA.")
@@ -460,7 +459,7 @@ r3d <- function(X, Y_list, T = NULL,
     e2_mat <- matrix(0, nrow = n, ncol = nQ)
     
     # Plus side for T
-    idxp <- which(w_plus[, 1] > 0)  # Using first column as proxy
+    idxp <- which(wTplus[, 1] > 0)
     if (length(idxp) > 0) {
       X_scaled_den <- X_centered[idxp] / h_use_den
       Xpow_p <- outer(X_scaled_den, 0:p, "^")
@@ -470,7 +469,7 @@ r3d <- function(X, Y_list, T = NULL,
     }
     
     # Minus side for T
-    idxm <- which(w_minus[, 1] > 0)
+    idxm <- which(wTminus[, 1] > 0)
     if (length(idxm) > 0) {
       X_scaled_den <- X_centered[idxm] / h_use_den
       Xpow_m <- outer(X_scaled_den, 0:p, "^")
@@ -560,13 +559,8 @@ r3d <- function(X, Y_list, T = NULL,
   out$alphaT_minus <- alphaT_minus
   out$int_plus <- int_plus
   out$int_minus <- int_minus
-  out$w_plus <- w_plus
-  out$w_minus <- w_minus
   out$e1_mat <- e1_mat
   out$e2_mat <- e2_mat
-  out$X <- X
-  out$Y_list <- Y_list
-  out$T <- T
   out$cutoff <- cutoff
   out$call <- call
   
