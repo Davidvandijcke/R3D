@@ -77,6 +77,16 @@ Implements a three-step procedure:
 }
 In fuzzy RDD, separate bandwidths are computed for the numerator (outcome) and denominator (treatment).
 }
+\examples{
+\donttest{
+  set.seed(42)
+  n <- 80
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + 2 * (X[i] >= 0)))
+  bw <- r3d_bwselect(X, Y_list, method = "simple")
+}
+
+}
 \references{
 \insertAllCited{}
 }

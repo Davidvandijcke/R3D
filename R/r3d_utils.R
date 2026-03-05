@@ -15,6 +15,7 @@
 #'   Row \eqn{i} is \eqn{(\hat{Q}_{Y_i}(q_1), \ldots, \hat{Q}_{Y_i}(q_m))}.
 #'
 #' @keywords internal
+#' @noRd
 .compute_empirical_qmat <- function(Y_list, q_grid, weights = NULL) {
   n <- length(Y_list)
   nQ <- length(q_grid)
@@ -80,6 +81,7 @@
 #' @return A list of the same length as \code{X}, containing the results of \code{FUN}.
 #'
 #' @keywords internal
+#' @noRd
 mclapply.hack <- function(X, FUN, mc.cores = 1, ...) {
   if(mc.cores <= 1 || !requireNamespace("parallel", quietly = TRUE)) {
     # Sequential processing
@@ -109,6 +111,7 @@ mclapply.hack <- function(X, FUN, mc.cores = 1, ...) {
 #' @return A single numeric value, \code{sum(x * y, na.rm=TRUE)}.
 #'
 #' @keywords internal
+#' @noRd
 .dot_product <- function(x, y) {
   sum(x * y, na.rm = TRUE)
 }
@@ -124,6 +127,7 @@ mclapply.hack <- function(X, FUN, mc.cores = 1, ...) {
 #'   and 1 represents perfect inequality.
 #'
 #' @keywords internal
+#' @noRd
 calculate_gini_from_quantile <- function(quantiles, quantile_fn) {
   # Validate inputs
   if (length(quantiles) != length(quantile_fn) || length(quantiles) < 2) {
@@ -209,6 +213,7 @@ calculate_gini_from_quantile <- function(quantiles, quantile_fn) {
 #' @return NULL if all checks pass. Otherwise, stops with an informative error message.
 #'
 #' @keywords internal
+#' @noRd
 validate_r3d_inputs <- function(X, Y_list, T = NULL, cutoff, method, p, q_grid, fuzzy, kernel_fun, s, boot, boot_reps, boot_cores, alpha, test, test_ranges = NULL) {
   
   # Check X
