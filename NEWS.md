@@ -20,6 +20,7 @@
 * Added lint CI workflow
 * Updated `.Rbuildignore` to exclude non-package files (`stata_r3d/`, `.claude/`, etc.)
 * Updated `.gitignore` to exclude MC run artifacts and Stata build logs
+* Added `.Rbuildignore` patterns to exclude compiled artifacts (`src/*.so`, `src/*.o`, `src/*.dll`) from source tarball (CRAN requirement)
 
 ## R3D 0.1.0
 
