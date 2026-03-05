@@ -11,3 +11,6 @@
 ^src/.*\.so$
 ^src/.*\.o$
 ^src/.*\.dll$
+^scripts$
+^reviews$
+^montecarlo$
