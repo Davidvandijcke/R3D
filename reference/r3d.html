@@ -280,14 +280,14 @@ Working paper.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Method: frechet </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Type: Fuzzy RDD </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Polynomial order: 2 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Bandwidth: IMSE-optimal = 0.6591 0.8623 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Bandwidth: IMSE-optimal = 0.6591 0.5077 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Sample size: 100 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Quantiles evaluated: 99 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Bootstrap: YES (200replications)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Treatment Effect Summary:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   1.950   2.127   2.207   2.279   2.475   2.917 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   1.574   1.717   1.782   1.840   1.998   2.355 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Use summary() for more details and plot() for visualization</span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></span></span>
@@ -307,24 +307,24 @@ Working paper.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> NULLITY TESTS:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Range [0.01, 0.99]:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Test statistic: 2.9173 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Critical value: 1.114 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Test statistic: 2.355 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Critical value: 0.8191 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     P-value: 0 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     Nullity Test: H0: tau(q) = 0 for all q in the range</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> HOMOGENEITY TESTS:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Range [0.01, 0.99]:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Test statistic: 0.6383 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Critical value: 0.8623 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     P-value: 0.195 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Test statistic: 0.5153 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Critical value: 0.695 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     P-value: 0.185 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     Homogeneity Test: H0: tau(q) is constant for all q in the range</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Aggregated distributional effects:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Quantile_Range Average_Effect CI_Lower CI_Upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        0 - 0.25         2.0464   0.9300   3.1628</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      0.25 - 0.5         2.1681   1.0517   3.2844</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      0.5 - 0.75         2.3521   1.2357   3.4684</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        0.75 - 1         2.5510   1.4346   3.6674</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        0 - 0.25         1.6520   0.7873   2.5167</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      0.25 - 0.5         1.7502   0.8855   2.6149</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      0.5 - 0.75         1.8987   1.0340   2.7634</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        0.75 - 1         2.0593   1.1946   2.9240</span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="r3d-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
