@@ -8,3 +8,6 @@
 ^r3d_latest\.pdf$
 ^docs$
 ^pkgdown$
+^src/.*\.so$
+^src/.*\.o$
+^src/.*\.dll$
