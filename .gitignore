@@ -5,3 +5,14 @@
 src/*.o
 src/*.so
 src/*.dll
+
+# Monte Carlo artifacts
+montecarlo/runs/
+montecarlo/*.log
+montecarlo/output/
+montecarlo/test_*.do
+montecarlo/test_*.log
+
+# Stata build artifacts
+stata_r3d/mata/*.log
+stata_r3d/mata/*.smcl
