@@ -765,6 +765,44 @@ test_that("r3d works with gini test using quantile functions", {
   expect_true(abs(gini_result$gini_diff) > 0.05)
 })
 
+test_that("Gini test_crit is >= test_stat (critical value from |diffs|, not signed diffs)", {
+  # Verifies F1 fix: test_crit must use abs(gini_diffs_boot) to match the two-sided test_stat
+  set.seed(4001)
+  n <- 80
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(1:n, function(i) {
+    if (X[i] < 0) rnorm(40, mean = 5, sd = 1)
+    else c(rnorm(20, mean = 3, sd = 0.5), rnorm(20, mean = 9, sd = 2))
+  })
+  out <- r3d(X = X, Y_list = Y_list, cutoff = 0,
+             method = "simple", p = 1, boot = TRUE, boot_reps = 50,
+             test = "gini", alpha = 0.05)
+  gini_res <- out$boot_out$test_results$gini$full_sample
+  # test_crit is the (1-alpha) quantile of |boot diffs|, so must be >= 0
+  expect_true(gini_res$test_crit_val >= 0)
+  # p_value uses abs(diffs), test_crit must be consistent: if test_stat <= test_crit, p >= alpha
+  # (not guaranteed always, but the critical value must be non-negative and >= test_stat at p>=alpha)
+  if (gini_res$p_value >= 0.05) {
+    expect_true(gini_res$test_crit_val >= gini_res$test_stat)
+  }
+})
+
+test_that("Bootstrap with seed produces identical results across two calls", {
+  # Verifies F5 fix: seeded bootstrap (serial path via lapply) is reproducible
+  set.seed(4002)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  r3d_obj <- r3d(X = test_data$x, Y_list = test_data$y_list,
+                 method = "simple", p = 1, boot = FALSE)
+
+  bo1 <- r3d_bootstrap(object = r3d_obj, X = test_data$x, Y_list = test_data$y_list,
+                       B = 20, seed = 42, cores = 1)
+  bo2 <- r3d_bootstrap(object = r3d_obj, X = test_data$x, Y_list = test_data$y_list,
+                       B = 20, seed = 42, cores = 1)
+
+  expect_equal(bo1$boot_taus, bo2$boot_taus)
+  expect_equal(bo1$crit_val,  bo2$crit_val)
+})
+
 test_that("r3d works with multiple tests including gini", {
   set.seed(3002)
   n <- 80
