@@ -49,9 +49,20 @@
 <li>Added Stata port (<code>stata_r3d/</code>) with full Mata implementation and 69-test equivalence suite</li>
 </ul></div>
 <div class="section level3">
+<h3 id="bug-fixes-0-1-1">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-1-1"></a></h3>
+<ul><li>Fixed compound quoting bug in <code>r3d.ado</code> (lines 39-41) that caused option parsing failures when paths contained spaces</li>
+</ul></div>
+<div class="section level3">
+<h3 id="monte-carlo-0-1-1">Monte Carlo<a class="anchor" aria-label="anchor" href="#monte-carlo-0-1-1"></a></h3>
+<ul><li>Added Stata Monte Carlo simulation framework (<code>02_mc_stata_worker.do</code>, <code>02_mc_stata_parallel.sh</code>, <code>run_stata_mc_nohup.sh</code>)</li>
+<li>Added <code>04_stata_coverage.R</code> for computing uniform coverage from Stata results</li>
+<li>Switched R MC scripts (<code>01_mc_R.R</code>, <code>03_mc_compare.R</code>) from pointwise to uniform coverage computation</li>
+</ul></div>
+<div class="section level3">
 <h3 id="other-changes-0-1-1">Other Changes<a class="anchor" aria-label="anchor" href="#other-changes-0-1-1"></a></h3>
 <ul><li>Added lint CI workflow</li>
 <li>Updated <code>.Rbuildignore</code> to exclude non-package files (<code>stata_r3d/</code>, <code>.claude/</code>, etc.)</li>
+<li>Updated <code>.gitignore</code> to exclude MC run artifacts and Stata build logs</li>
 </ul></div>
 </div>
     <div class="section level2">
