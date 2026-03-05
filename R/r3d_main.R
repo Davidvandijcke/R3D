@@ -283,6 +283,10 @@ r3d <- function(X, Y_list, T = NULL,
     h_star_den <- if (fuzzy) bwres$h_star_den else NULL
   }
   
+  # Check that bandwidths are strictly positive
+  if (any(h_star_num <= 0)) stop("Bandwidths must be strictly positive (got non-positive values).")
+  if (!is.null(h_star_den) && any(h_star_den <= 0)) stop("Bandwidths must be strictly positive (got non-positive values).")
+
   # 2) Build matrix of empirical quantiles [n x nQ]
   # Pass weights to .compute_empirical_qmat
   Qmat <- .compute_empirical_qmat(Y_list, q_grid, weights)

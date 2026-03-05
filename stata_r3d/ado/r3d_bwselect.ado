@@ -75,8 +75,12 @@ program define r3d_bwselect, rclass
     mata: r3d_bandwidth_select("`x_centered'", "`Qmat'", "`quantiles'", "`tvarname'", ///
         `polynomial', `pilot', `kernel_type', "`method'", "`touse'", `is_fuzzy', `coverage_flag', "`weights'")
 
-    tempname HNUM
+    tempname HNUM PILOT_NUM
     matrix `HNUM' = r(h_num)
+    matrix `PILOT_NUM' = r(pilot_num)
+    local h_den_scalar = cond(`is_fuzzy', r(h_den), .)
+    local pilot_den_scalar = cond(`is_fuzzy', r(pilot_den), .)
+
     mata: st_numscalar("__bw_rc", r3d_prepare_bandwidth_matrix("`HNUM'", `nq', "`method'"))
     if scalar(__bw_rc) != 0 {
         di as error "Bandwidth selection failed"
@@ -84,12 +88,6 @@ program define r3d_bwselect, rclass
         exit 498
     }
     scalar drop __bw_rc
-
-    tempname PILOT_NUM
-    matrix `PILOT_NUM' = r(pilot_num)
-    local h_den_scalar = cond(`is_fuzzy', r(h_den), .)
-    tempname PILOT_DEN
-    if `is_fuzzy' matrix `PILOT_DEN' = r(pilot_den)
     mata: st_numscalar("__bw_min", min(st_matrix("`HNUM'")))
     mata: st_numscalar("__bw_max", max(st_matrix("`HNUM'")))
 
@@ -109,15 +107,11 @@ program define r3d_bwselect, rclass
     return matrix pilot_num = `PILOT_NUM'
     if `is_fuzzy' {
         return scalar h_den = `h_den_scalar'
-        return scalar pilot_den = `PILOT_DEN'[1,1]
+        return scalar pilot_den = `pilot_den_scalar'
     }
     return scalar method_code = cond("`method'" == "frechet", 1, 0)
     return scalar pilot = `pilot'
     return scalar polynomial = `polynomial'
     return scalar coverage = `coverage_flag'
     return matrix quantiles = `QGRID'
-
-    // Clean up temporary variables
-    quietly drop `x_centered'
-    if `is_fuzzy' quietly drop `t_centered'
 end
