@@ -32,8 +32,7 @@
                 ") does not match length of Y_list (", n, ").", sep = ""))
     }
     if (!requireNamespace("Hmisc", quietly = TRUE)) {
-      warning("Hmisc package is required for weighted quantiles. Falling back to unweighted quantiles.")
-      use_weights <- FALSE
+      stop('Package Hmisc is required for weighted quantiles. Install it with install.packages("Hmisc").')
     }
   }
   
@@ -88,16 +87,16 @@ mclapply.hack <- function(X, FUN, mc.cores = 1, ...) {
     return(lapply(X, FUN, ...))
   }
   
-  # Check OS and use appropriate parallel method
-  if(.Platform$OS.type == "windows") {
-    # On Windows: use parLapply with explicit cluster creation
-    cl <- parallel::makeCluster(mc.cores)
-    on.exit(parallel::stopCluster(cl))
-    return(parallel::parLapply(cl, X, FUN, ...))
-  } else {
-    # On Unix-like systems: use mclapply
-    return(parallel::mclapply(X, FUN, mc.cores = mc.cores, ...))
+  # On Windows, PSOCK workers have no access to closure variables or the R3D
+  # namespace, so parallel execution silently errors or produces wrong results.
+  # Force serial execution on Windows.
+  if (.Platform$OS.type == "windows") {
+    warning("Parallel execution is not supported on Windows; falling back to serial execution.")
+    return(lapply(X, FUN, ...))
   }
+
+  # On Unix-like systems: use mclapply
+  return(parallel::mclapply(X, FUN, mc.cores = mc.cores, ...))
 }
 
 #' Dot Product of Two Numeric Vectors
@@ -160,7 +159,11 @@ calculate_gini_from_quantile <- function(quantiles, quantile_fn) {
     mean_value <- mean_value + 0.5 * (quantile_fn[i + 1] + quantile_fn[i]) * delta_p
   }
   
-  if (mean_value <= 0) return(0)  # Avoid division by zero
+  if (mean_value <= 0) {
+    warning(paste("Gini coefficient is undefined for distributions with non-positive mean (mean_value =",
+                  mean_value, ")"))
+    return(NA_real_)
+  }
   
   # Calculate the Lorenz curve
   lorenz_curve <- numeric(length(quantiles))
@@ -397,7 +400,7 @@ fit_global_poly <- function(Y, X, order) {
   }
   
   resid_var <- var(resid(fit))
-  if (is.na(resid_var)) resid_var <- 1
+  if (is.na(resid_var) || resid_var < .Machine$double.eps) resid_var <- 1
   
   return(list(derivs = derivs, resid_var = resid_var))
 }

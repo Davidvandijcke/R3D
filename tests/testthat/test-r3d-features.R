@@ -704,10 +704,14 @@ test_that("calculate_gini_from_quantile correctly measures inequality", {
   uniform_values <- uniform_quantiles * 100  # Q(p) = 100p for uniform on [0,100]
   expect_equal(round(calculate_gini_from_quantile(uniform_quantiles, uniform_values), 2), 0.33)
   
-  # Handle negative values
+  # Handle negative mean: F2 fix -- returns NA_real_ with a warning
   negative_quantiles <- seq(0.1, 0.9, by = 0.1)
   negative_values <- c(-50, -40, -30, -20, -10, 0, 10, 20, 30)
-  expect_true(!is.na(calculate_gini_from_quantile(negative_quantiles, negative_values)))
+  expect_warning(
+    neg_result <- calculate_gini_from_quantile(negative_quantiles, negative_values),
+    "non-positive mean"
+  )
+  expect_true(is.na(neg_result))
   
   # Handle empty or insufficient data
   expect_true(is.na(calculate_gini_from_quantile(c(), c())))
@@ -841,4 +845,52 @@ test_that("r3d works with multiple tests including gini", {
   expect_true(any(grepl("Gini coefficient above cutoff:", summary_output, fixed = TRUE)))
   expect_true(any(grepl("Gini coefficient below cutoff:", summary_output, fixed = TRUE)))
   expect_true(any(grepl("Difference in Gini coefficients:", summary_output, fixed = TRUE)))
+})
+
+###############################################################################
+# 10) Tests for review fixes (F2, F4, F5)
+###############################################################################
+
+test_that("calculate_gini_from_quantile() returns NA_real_ with warning for non-positive mean (F2)", {
+  # Distribution with negative mean: integral of Q(p) over [0,1] < 0
+  q_levels <- seq(0.1, 0.9, by = 0.1)
+  q_values  <- c(-50, -40, -30, -20, -10, 0, 10, 20, 30)  # mean ~ -10
+
+  result <- expect_warning(
+    calculate_gini_from_quantile(q_levels, q_values),
+    regexp = "non-positive mean"
+  )
+  expect_true(is.na(result))
+  expect_identical(result, NA_real_)
+})
+
+test_that("r3d() stops with a clear message when bandwidth of 0 is supplied (F4)", {
+  set.seed(501)
+  n <- 30
+  X <- runif(n, -1, 1)
+  Y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + X[i]))
+
+  expect_error(
+    r3d(X = X, Y_list = Y_list, cutoff = 0, method = "simple", p = 1,
+        boot = FALSE, bandwidths = 0),
+    regexp = "strictly positive"
+  )
+  expect_error(
+    r3d(X = X, Y_list = Y_list, cutoff = 0, method = "simple", p = 1,
+        boot = FALSE, bandwidths = -0.5),
+    regexp = "strictly positive"
+  )
+})
+
+test_that("fit_global_poly() does not return resid_var = 0 for a perfect polynomial fit (F5)", {
+  # Perfect linear fit: Y = 2 + 3*X exactly
+  X <- seq(-1, 1, length.out = 20)
+  Y <- 2 + 3 * X
+
+  result <- R3D:::fit_global_poly(Y, X, order = 1)
+
+  # resid_var should be clamped to 1 (not 0) so downstream bandwidth selection
+  # does not produce h* = 0
+  expect_equal(result$resid_var, 1)
+  expect_true(result$resid_var > 0)
 })
