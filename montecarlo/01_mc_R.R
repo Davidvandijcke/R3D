@@ -28,6 +28,7 @@ KERNEL        <- "epanechnikov"
 P_ORDER       <- 2
 NCORES        <- parallel::detectCores() - 1
 if (NCORES < 1) NCORES <- 1
+if (subset_only) N_SIM <- N_STATA
 
 NQ <- length(Q_GRID)
 
@@ -74,16 +75,7 @@ generate_dgp2 <- function(n, delta, n_i, seed) {
     lambda_i <- max(0.5, min(1.5, 1 + 0.5 * X[i]))
     rnorm(n_i, mean = mu_i, sd = 1) + 2 * rexp(n_i, rate = lambda_i)
   })
-  # True tau: difference in quantile functions at X=0 (above vs below)
-  # At X=0: lambda=1, mu = delta (above) vs mu = 0 (below)
-  # Y = N(mu, 1) + 2*Exp(1)
-  set.seed(99999)
-  large_n <- 1e6
-  y_above <- rnorm(large_n, mean = delta, sd = 1) + 2 * rexp(large_n, rate = 1)
-  y_below <- rnorm(large_n, mean = 0, sd = 1) + 2 * rexp(large_n, rate = 1)
-  true_tau <- quantile(y_above, probs = Q_GRID, names = FALSE) -
-              quantile(y_below, probs = Q_GRID, names = FALSE)
-  list(X = X, Y_list = Y_list, true_tau = true_tau)
+  list(X = X, Y_list = Y_list)
 }
 
 #' Fuzzy variant of DGP 1
@@ -108,7 +100,7 @@ generate_dgp1_fuzzy <- function(n, delta, n_i, seed) {
 # HELPER: Save data CSV for Stata
 # ============================================================================
 save_mc_data <- function(X, Y_list, q_grid, filepath, T_vec = NULL) {
-  Qmat <- R3D:::.compute_empirical_qmat(Y_list, q_grid)
+  Qmat <- t(sapply(Y_list, quantile, probs = q_grid))
   df <- data.frame(X = X)
   if (!is.null(T_vec)) df$T_treat <- T_vec
   for (j in seq_along(q_grid)) df[[paste0("Q", j)]] <- Qmat[, j]
@@ -173,6 +165,7 @@ for (n_obs in SAMPLE_SIZES) {
         pval_homogeneity <- rep(NA, N_SIM)
 
         sim_run <- function(s) {
+          set.seed(3000000 + s)
           data_seed <- 1000 + s
           if (dgp_name == "dgp1") {
             dat <- generate_dgp1(n_obs, delta, N_I, data_seed)
@@ -180,7 +173,8 @@ for (n_obs in SAMPLE_SIZES) {
             dat <- generate_dgp2(n_obs, delta, N_I, data_seed)
           }
 
-          # xi matrix: use pre-generated for first N_STATA, random otherwise
+          # Regenerate xi from seed rather than reading CSV to avoid file I/O in parallel workers;
+          # seed matches CSV generation above so values are identical.
           xi <- NULL
           if (s <= N_STATA) {
             set.seed(2000000 + s)
@@ -203,6 +197,7 @@ for (n_obs in SAMPLE_SIZES) {
 
           # Extract bandwidths
           bw <- fit$bandwidths$h_star_num
+          if (is.null(bw) || length(bw) == 0) { warning('NULL bandwidth returned'); return(NULL) }
           if (length(bw) == 1) bw <- rep(bw, NQ)
 
           # Extract p-values
@@ -218,16 +213,18 @@ for (n_obs in SAMPLE_SIZES) {
             }
           }
 
-          list(
-            tau = as.numeric(fit$tau),
-            cb_lower = as.numeric(fit$boot_out$cb_lower),
-            cb_upper = as.numeric(fit$boot_out$cb_upper),
-            bw = bw,
-            pval_nullity = pn,
-            pval_homogeneity = ph,
-            s = s,
-            X = dat$X,
-            Y_list = dat$Y_list
+          c(
+            list(
+              tau = as.numeric(fit$tau),
+              cb_lower = as.numeric(fit$boot_out$cb_lower),
+              cb_upper = as.numeric(fit$boot_out$cb_upper),
+              bw = bw,
+              pval_nullity = pn,
+              pval_homogeneity = ph,
+              s = s
+            ),
+            if (s <= N_STATA) list(X = dat$X, Y_list = dat$Y_list)
+            else list(X = NULL, Y_list = NULL)
           )
         }
 
@@ -350,6 +347,7 @@ for (n_obs in SAMPLE_SIZES) {
       if (is.null(fit)) return(NULL)
 
       bw <- fit$bandwidths$h_star_num
+      if (is.null(bw) || length(bw) == 0) { warning('NULL bandwidth returned'); return(NULL) }
       if (length(bw) == 1) bw <- rep(bw, NQ)
 
       pn <- NA
