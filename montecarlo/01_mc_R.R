@@ -293,16 +293,17 @@ for (n_obs in SAMPLE_SIZES) {
           bias <- colMeans(tau_mat[valid, , drop = FALSE]) - true_tau
           rmse <- sqrt(colMeans((tau_mat[valid, , drop = FALSE] -
                                   matrix(true_tau, nrow = n_valid, ncol = NQ, byrow = TRUE))^2))
-          coverage <- colMeans(
+          uniform_covered <- apply(
             cb_lower_mat[valid, , drop = FALSE] <=
               matrix(true_tau, nrow = n_valid, ncol = NQ, byrow = TRUE) &
             cb_upper_mat[valid, , drop = FALSE] >=
               matrix(true_tau, nrow = n_valid, ncol = NQ, byrow = TRUE),
-            na.rm = TRUE)
+            1, all)
+          coverage_uniform <- mean(uniform_covered, na.rm = TRUE)
           cat("    Valid sims:", n_valid, "/", N_SIM, "\n")
           cat("    Mean |bias|:", round(mean(abs(bias)), 4), "\n")
           cat("    Mean RMSE:", round(mean(rmse), 4), "\n")
-          cat("    Mean coverage:", round(mean(coverage), 4), "\n")
+          cat("    Uniform coverage:", round(coverage_uniform, 4), "\n")
           if (delta == 0) {
             cat("    Rejection rate (nullity, alpha=0.05):",
                 round(mean(pval_nullity[valid] < 0.05, na.rm = TRUE), 4), "\n")
@@ -471,12 +472,13 @@ for (key in names(all_R_results)) {
   bias <- colMeans(res$tau_mat[valid, , drop = FALSE]) - tt
   rmse <- sqrt(colMeans((res$tau_mat[valid, , drop = FALSE] -
                           matrix(tt, nrow = n_valid, ncol = NQ, byrow = TRUE))^2))
-  coverage <- colMeans(
+  uniform_covered <- apply(
     res$cb_lower_mat[valid, , drop = FALSE] <=
       matrix(tt, nrow = n_valid, ncol = NQ, byrow = TRUE) &
     res$cb_upper_mat[valid, , drop = FALSE] >=
       matrix(tt, nrow = n_valid, ncol = NQ, byrow = TRUE),
-    na.rm = TRUE)
+    1, all)
+  coverage_uniform <- mean(uniform_covered, na.rm = TRUE)
 
   rej_null <- if (!is.null(res$pval_nullity))
     mean(res$pval_nullity[valid] < 0.05, na.rm = TRUE) else NA
@@ -491,8 +493,7 @@ for (key in names(all_R_results)) {
     mean_abs_bias = mean(abs(bias)),
     max_abs_bias = max(abs(bias)),
     mean_rmse = mean(rmse),
-    mean_coverage = mean(coverage),
-    min_coverage = min(coverage),
+    uniform_coverage = coverage_uniform,
     rej_nullity = rej_null,
     rej_homogeneity = rej_homo,
     stringsAsFactors = FALSE
@@ -503,6 +504,6 @@ write.csv(summary_df, file.path(outdir, "results_R", "mc_R_summary.csv"), row.na
 
 cat("\n=== R Monte Carlo complete ===\n")
 cat("Summary:\n")
-print(summary_df[, c("cell", "n_valid", "mean_abs_bias", "mean_coverage",
+print(summary_df[, c("cell", "n_valid", "mean_abs_bias", "uniform_coverage",
                       "rej_nullity", "rej_homogeneity")])
 cat("\nAll results saved to:", file.path(outdir, "results_R"), "\n")

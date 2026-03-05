@@ -36,9 +36,9 @@ program define r3d, eclass
     }
     
     // Normalize aliases to DiSCo-style option names before parsing
-    local cmdline = regexr("`0'", "(?i)nquantiles\(", "nq(")
-    local cmdline = regexr("`cmdline'", "(?i)denbandwidth\(", "denband(")
-    local 0 = trim("`cmdline'")
+    local cmdline = regexr(`"`0'"', "(?i)nquantiles\(", "nq(")
+    local cmdline = regexr(`"`cmdline'"', "(?i)denbandwidth\(", "denband(")
+    local 0 `"`cmdline'"'
 
     syntax varlist(min=2 numeric) [if] [in], ///
         [ cutoff(real 0) ///

@@ -170,12 +170,12 @@ for (dgp in dgps) {
             bias_r <- colMeans(r_res$tau_mat[valid_r, , drop = FALSE]) - true_tau
             rmse_r <- sqrt(colMeans((r_res$tau_mat[valid_r, , drop = FALSE] -
                                       matrix(true_tau, nrow = n_r, ncol = NQ, byrow = TRUE))^2))
-            cov_r <- colMeans(
+            cov_r <- mean(apply(
               r_res$cb_lower_mat[valid_r, , drop = FALSE] <=
                 matrix(true_tau, nrow = n_r, ncol = NQ, byrow = TRUE) &
               r_res$cb_upper_mat[valid_r, , drop = FALSE] >=
                 matrix(true_tau, nrow = n_r, ncol = NQ, byrow = TRUE),
-              na.rm = TRUE)
+              1, all), na.rm = TRUE)
             rej_null_r <- mean(r_res$pval_nullity[valid_r] < 0.05, na.rm = TRUE)
             rej_homo_r <- if (!is.null(r_res$pval_homogeneity))
               mean(r_res$pval_homogeneity[valid_r] < 0.05, na.rm = TRUE) else NA
@@ -241,12 +241,12 @@ for (dgp in dgps) {
           bias_s <- colMeans(stata_taus[valid_s, , drop = FALSE]) - true_tau
           rmse_s <- sqrt(colMeans((stata_taus[valid_s, , drop = FALSE] -
                                     matrix(true_tau, nrow = n_s, ncol = NQ, byrow = TRUE))^2))
-          cov_s <- colMeans(
+          cov_s <- mean(apply(
             stata_cb_lo[valid_s, , drop = FALSE] <=
               matrix(true_tau, nrow = n_s, ncol = NQ, byrow = TRUE) &
             stata_cb_hi[valid_s, , drop = FALSE] >=
               matrix(true_tau, nrow = n_s, ncol = NQ, byrow = TRUE),
-            na.rm = TRUE)
+            1, all), na.rm = TRUE)
           rej_null_s <- mean(stata_pn[valid_s] < 0.05, na.rm = TRUE)
           rej_homo_s <- mean(stata_ph[valid_s] < 0.05, na.rm = TRUE)
         }
@@ -254,12 +254,12 @@ for (dgp in dgps) {
         # Compute metrics for Stata own-bw
         if (n_so > 0) {
           bias_so <- colMeans(stata_own_taus[valid_so, , drop = FALSE]) - true_tau
-          cov_so <- colMeans(
+          cov_so <- mean(apply(
             stata_own_cb_lo[valid_so, , drop = FALSE] <=
               matrix(true_tau, nrow = n_so, ncol = NQ, byrow = TRUE) &
             stata_own_cb_hi[valid_so, , drop = FALSE] >=
               matrix(true_tau, nrow = n_so, ncol = NQ, byrow = TRUE),
-            na.rm = TRUE)
+            1, all), na.rm = TRUE)
           rej_null_so <- mean(stata_own_pn[valid_so] < 0.05, na.rm = TRUE)
         }
 
@@ -269,20 +269,20 @@ for (dgp in dgps) {
           n_R = n_r,
           bias_R = if (n_r > 0) mean(abs(bias_r)) else NA,
           rmse_R = if (n_r > 0) mean(rmse_r) else NA,
-          coverage_R = if (n_r > 0) mean(cov_r) else NA,
+          coverage_R = if (n_r > 0) cov_r else NA,
           rej_null_R = if (n_r > 0) rej_null_r else NA,
           rej_homo_R = if (n_r > 0) rej_homo_r else NA,
           # Stata shared-bw metrics
           n_Stata_shared = n_s,
           bias_Stata_shared = if (n_s > 0) mean(abs(bias_s)) else NA,
           rmse_Stata_shared = if (n_s > 0) mean(rmse_s) else NA,
-          coverage_Stata_shared = if (n_s > 0) mean(cov_s) else NA,
+          coverage_Stata_shared = if (n_s > 0) cov_s else NA,
           rej_null_Stata_shared = if (n_s > 0) rej_null_s else NA,
           rej_homo_Stata_shared = if (n_s > 0) rej_homo_s else NA,
           # Stata own-bw metrics
           n_Stata_own = n_so,
           bias_Stata_own = if (n_so > 0) mean(abs(bias_so)) else NA,
-          coverage_Stata_own = if (n_so > 0) mean(cov_so) else NA,
+          coverage_Stata_own = if (n_so > 0) cov_so else NA,
           rej_null_Stata_own = if (n_so > 0) rej_null_so else NA,
           stringsAsFactors = FALSE, row.names = NULL
         )
@@ -290,15 +290,15 @@ for (dgp in dgps) {
         summary_rows[[length(summary_rows) + 1]] <- row
 
         if (n_r > 0 || n_s > 0) {
-          cat(sprintf("  %s: R(%d) cov=%.3f rej=%.3f | Stata-shared(%d) cov=%.3f rej=%.3f | Stata-own(%d) cov=%.3f rej=%.3f\n",
+          cat(sprintf("  %s: R(%d) ucov=%.3f rej=%.3f | Stata-shared(%d) ucov=%.3f rej=%.3f | Stata-own(%d) ucov=%.3f rej=%.3f\n",
                       cell, n_r,
-                      if (n_r > 0) mean(cov_r) else NA,
+                      if (n_r > 0) cov_r else NA,
                       if (n_r > 0) rej_null_r else NA,
                       n_s,
-                      if (n_s > 0) mean(cov_s) else NA,
+                      if (n_s > 0) cov_s else NA,
                       if (n_s > 0) rej_null_s else NA,
                       n_so,
-                      if (n_so > 0) mean(cov_so) else NA,
+                      if (n_so > 0) cov_so else NA,
                       if (n_so > 0) rej_null_so else NA))
         }
       }
