@@ -3,6 +3,10 @@
 ### Tests
 
 * Expanded test coverage: frechet+bootstrap, epanechnikov/uniform kernels, parallel bootstrap (cores=2), user-supplied bandwidths and weights, internal `calculate_gini_from_quantile` via `R3D:::` prefix
+* Added `r3d_bwselect()` deparse-based kernel detection tests (epanechnikov/uniform/triangular yield different `h_star_num`)
+* Added vector bandwidth, fuzzy+list bandwidth, and fuzzy+scalar `expect_error` tests
+* Added structured parallel bootstrap test: `is.matrix(boot_taus)`, correct dims, `p_value` in `[0,1]`
+* Extended Gini negative-values test: `expect_gte(result, 0)` and `expect_lte(result, 1)` bounds
 
 ### New Features
 

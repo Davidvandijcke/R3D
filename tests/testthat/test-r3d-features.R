@@ -707,7 +707,10 @@ test_that("calculate_gini_from_quantile correctly measures inequality", {
   # Handle negative values
   negative_quantiles <- seq(0.1, 0.9, by = 0.1)
   negative_values <- c(-50, -40, -30, -20, -10, 0, 10, 20, 30)
-  expect_true(!is.na(R3D:::calculate_gini_from_quantile(negative_quantiles, negative_values)))
+  result_neg <- R3D:::calculate_gini_from_quantile(negative_quantiles, negative_values)
+  expect_true(!is.na(result_neg))
+  expect_gte(result_neg, 0)
+  expect_lte(result_neg, 1)
   
   # Handle empty or insufficient data
   expect_true(is.na(R3D:::calculate_gini_from_quantile(c(), c())))
@@ -864,4 +867,84 @@ test_that("r3d() accepts user-supplied bandwidths and weights", {
                 weights = wts)
   expect_s3_class(out_wt, "r3d")
   expect_false(any(is.na(out_wt$tau)))
+})
+
+################################################################################
+# 11) r3d_bwselect() kernel deparse detection
+################################################################################
+
+test_that("r3d_bwselect() deparse-based kernel detection yields different h_star_num", {
+  set.seed(501)
+  n <- 50
+  x <- runif(n, -1, 1)
+  y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + x[i]))
+
+  bw_tri <- r3d_bwselect(x, y_list, method = "simple", p = 1,
+                          kernel = function(u) pmax(0, 1 - abs(u)))
+  bw_epa <- r3d_bwselect(x, y_list, method = "simple", p = 1,
+                          kernel = function(u) 0.75 * pmax(0, 1 - u^2))
+  bw_uni <- r3d_bwselect(x, y_list, method = "simple", p = 1,
+                          kernel = function(u) 0.5 * (abs(u) <= 1))
+
+  expect_true(is.numeric(bw_epa$h_star_num))
+  expect_true(is.numeric(bw_uni$h_star_num))
+  expect_false(isTRUE(all.equal(bw_epa$h_star_num, bw_tri$h_star_num)))
+  expect_false(isTRUE(all.equal(bw_uni$h_star_num, bw_tri$h_star_num)))
+})
+
+################################################################################
+# 12) Extended bandwidth input tests
+################################################################################
+
+test_that("r3d() handles vector bandwidths, fuzzy list, and rejects fuzzy scalar", {
+  set.seed(502)
+  n <- 50
+  x <- runif(n, -1, 1)
+  y_list <- lapply(seq_len(n), function(i) rnorm(20, mean = 2 + x[i]))
+  q_grid <- seq(0.1, 0.9, by = 0.1)
+  nq <- length(q_grid)
+  t <- rbinom(n, 1, 0.5 + 0.4 * (x > 0))
+
+  # Vector bandwidth of length nq
+  bw_vec <- rep(0.4, nq)
+  out_vec <- r3d(X = x, Y_list = y_list, method = "simple", p = 1,
+                 q_grid = q_grid, bandwidths = bw_vec, boot = FALSE)
+  expect_s3_class(out_vec, "r3d")
+  expect_true(all(is.finite(out_vec$tau)))
+
+  # Fuzzy + list bandwidths (frechet)
+  out_list <- r3d(X = x, Y_list = y_list, T = t, fuzzy = TRUE,
+                  method = "frechet", p = 1,
+                  bandwidths = list(num = 0.5, den = 0.3), boot = FALSE)
+  expect_s3_class(out_list, "r3d")
+  expect_true(all(is.finite(out_list$tau)))
+
+  # Fuzzy + scalar must error
+  expect_error(
+    r3d(X = x, Y_list = y_list, T = t, fuzzy = TRUE,
+        method = "simple", p = 1, bandwidths = 0.5, boot = FALSE)
+  )
+})
+
+################################################################################
+# 13) Parallel bootstrap with structured assertions
+################################################################################
+
+test_that("r3d_bootstrap() cores=2 returns matrix boot_taus and valid p_value", {
+  skip_on_cran()
+  skip_on_os("windows")
+
+  set.seed(503)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  r3d_obj <- r3d(X = test_data$x, Y_list = test_data$y_list,
+                 method = "simple", p = 1, boot = FALSE)
+
+  bo <- r3d_bootstrap(object = r3d_obj, X = test_data$x, Y_list = test_data$y_list,
+                      B = 10, alpha = 0.1, test = "nullity", cores = 2)
+
+  expect_true(is.matrix(bo$boot_taus))
+  expect_equal(dim(bo$boot_taus), c(length(r3d_obj$q_grid), 10))
+  expect_true(is.numeric(bo$p_value))
+  expect_gte(bo$p_value, 0)
+  expect_lte(bo$p_value, 1)
 })
