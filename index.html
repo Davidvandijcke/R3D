@@ -70,11 +70,11 @@
 <!-- badges: start -->
 
 <div class="section level2">
-<h2 id="adding-a-new-dimension-to-rdd-">Adding a New Dimension to RDD! 🚀<a class="anchor" aria-label="anchor" href="#adding-a-new-dimension-to-rdd-"></a>
+<h2 id="adding-a-new-dimension-to-rdd">Adding a New Dimension to RDD!<a class="anchor" aria-label="anchor" href="#adding-a-new-dimension-to-rdd"></a>
 </h2>
 <p>R3D brings your regression discontinuity designs into the third dimension by handling <em>distributional outcomes</em> instead of just scalar responses. When your treatment effect isn’t just a single number but an entire distribution shift, R3D has you covered!</p>
 <div class="section level3">
-<h3 id="why-r3d-">Why “R3D”? 🤔<a class="anchor" aria-label="anchor" href="#why-r3d-"></a>
+<h3 id="why-r3d">Why “R3D”?<a class="anchor" aria-label="anchor" href="#why-r3d"></a>
 </h3>
 <ul>
 <li>
@@ -87,7 +87,7 @@
 </div>
 </div>
 <div class="section level2">
-<h2 id="installation-">Installation 📦<a class="anchor" aria-label="anchor" href="#installation-"></a>
+<h2 id="installation-package">Installation 📦<a class="anchor" aria-label="anchor" href="#installation-package"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install the development version from GitHub:</span></span>
@@ -98,7 +98,7 @@
 <span><span class="co"># install.packages("R3D")</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="features-">Features ✨<a class="anchor" aria-label="anchor" href="#features-"></a>
+<h2 id="features-sparkles">Features ✨<a class="anchor" aria-label="anchor" href="#features-sparkles"></a>
 </h2>
 <ul>
 <li>📏 Estimates treatment effects across the entire distribution</li>
@@ -110,7 +110,7 @@
 </ul>
 </div>
 <div class="section level2">
-<h2 id="quick-example-">Quick Example 📋<a class="anchor" aria-label="anchor" href="#quick-example-"></a>
+<h2 id="quick-example-clipboard">Quick Example 📋<a class="anchor" aria-label="anchor" href="#quick-example-clipboard"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">R3D</span><span class="op">)</span></span>
@@ -136,24 +136,24 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="how-it-works-">How It Works 🔧<a class="anchor" aria-label="anchor" href="#how-it-works-"></a>
+<h2 id="how-it-works-wrench">How It Works 🔧<a class="anchor" aria-label="anchor" href="#how-it-works-wrench"></a>
 </h2>
 <p>R3D uses advanced local polynomial and Fréchet regression techniques to estimate how an entire distribution changes at a discontinuity threshold when treatment is at a higher level of aggregation than the outcome variable. Instead of just estimating E[Y|X] at the cutoff, we estimate the entire <em>average</em> conditional quantile function E[Q_Y(τ|X)] at the threshold. Note the word average! Unlike traditional quantile RDD, we are now sampling <em>random</em> distributions, which requires a different approach to estimation and inference. For more details on this fascinating subject, check out the supporting paper by Van Dijcke (that’s me!) (2025 (that’s now!)).</p>
 </div>
 <div class="section level2">
-<h2 id="citation-">Citation 📄<a class="anchor" aria-label="anchor" href="#citation-"></a>
+<h2 id="citation-page_facing_up">Citation 📄<a class="anchor" aria-label="anchor" href="#citation-page_facing_up"></a>
 </h2>
 <p>If you use R3D in your research, please cite:</p>
 <pre><code>Van Dijcke, D. (2025). Regression Discontinuity Design with Distributional Outcomes.
 Working paper.</code></pre>
 </div>
 <div class="section level2">
-<h2 id="learn-more-">Learn More 📚<a class="anchor" aria-label="anchor" href="#learn-more-"></a>
+<h2 id="learn-more">Learn More<a class="anchor" aria-label="anchor" href="#learn-more"></a>
 </h2>
 <p>Check out the <a href="https://Davidvandijcke.github.io/R3D/" class="external-link">full documentation</a> for tutorials, examples, and detailed function references.</p>
 </div>
 <div class="section level2">
-<h2 id="contributing-">Contributing 🤝<a class="anchor" aria-label="anchor" href="#contributing-"></a>
+<h2 id="contributing-handshake">Contributing 🤝<a class="anchor" aria-label="anchor" href="#contributing-handshake"></a>
 </h2>
 <p>Contributions welcome! Feel free to submit issues or pull requests.</p>
 </div>
