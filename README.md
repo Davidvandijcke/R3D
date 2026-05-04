@@ -6,11 +6,11 @@
 [![R-CMD-check](https://github.com/Davidvandijcke/r3d/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Davidvandijcke/r3d/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-## Adding a New Dimension to RDD! 🚀
+## Adding a New Dimension to RDD! 
 
 R3D brings your regression discontinuity designs into the third dimension by handling *distributional outcomes* instead of just scalar responses. When your treatment effect isn't just a single number but an entire distribution shift, R3D has you covered!
 
-### Why "R3D"? 🤔
+### Why "R3D"? 
 
 - **3 D's**: **D**iscontinuity **D**esign with **D**istributions
 - **3D**: Because we're adding a new dimension (quantiles) to traditional RDD
@@ -76,7 +76,7 @@ Van Dijcke, D. (2025). Regression Discontinuity Design with Distributional Outco
 Working paper.
 ```
 
-## Learn More 📚
+## Learn More 
 
 Check out the [full documentation](https://Davidvandijcke.github.io/R3D/) for tutorials, examples, and detailed function references.
 
