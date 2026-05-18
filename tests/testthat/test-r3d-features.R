@@ -2,7 +2,6 @@ context("R3D Package Feature Tests")
 
 library(testthat)
 library(R3D)
-library(dplyr, warn.conflicts = FALSE)
 
 ###############################################################################
 # 1) Functions to generate fake data for testing with RANDOM DISTRIBUTIONS
@@ -97,11 +96,9 @@ create_hetero_effect_data <- function(n = 1000, seed = 456, sample_size = 200) {
   names(true_effects) <- as.character(q_grid)
   
   key_quantiles <- c(0.1, 0.25, 0.5, 0.75, 0.9)
-  key_effects <- round(quantile(above_samples, probs = key_quantiles) - 
+  key_effects <- round(quantile(above_samples, probs = key_quantiles) -
                          quantile(below_samples, probs = key_quantiles), 2)
-  cat("True treatment effects at key quantiles:\n")
-  print(key_effects)
-  
+
   list(
     x = x,
     y_list = y_list,
@@ -253,8 +250,10 @@ test_that("r3d() boot=TRUE yields boot_out with confidence bands & tests (sharp)
   expect_equal(length(bo$cb_lower), length(out_boot$q_grid))
   expect_equal(length(bo$cb_upper), length(out_boot$q_grid))
   expect_equal(dim(bo$boot_taus), c(length(out_boot$q_grid), 10))
-  expect_true(all(bo$cb_upper >= out_boot$tau, na.rm = TRUE))
-  expect_true(all(bo$cb_lower <= out_boot$tau, na.rm = TRUE))
+  expect_false(anyNA(bo$cb_upper))
+  expect_false(anyNA(bo$cb_lower))
+  expect_true(all(bo$cb_upper >= out_boot$tau))
+  expect_true(all(bo$cb_lower <= out_boot$tau))
 })
 
 test_that("r3d() boot=TRUE yields boot_out with confidence bands & tests (fuzzy)", {
@@ -272,8 +271,10 @@ test_that("r3d() boot=TRUE yields boot_out with confidence bands & tests (fuzzy)
   expect_equal(length(bo$cb_lower), length(out_boot_fuzzy$q_grid))
   expect_equal(length(bo$cb_upper), length(out_boot_fuzzy$q_grid))
   expect_equal(dim(bo$boot_taus), c(length(out_boot_fuzzy$q_grid), 10))
-  expect_true(all(bo$cb_upper >= out_boot_fuzzy$tau, na.rm = TRUE))
-  expect_true(all(bo$cb_lower <= out_boot_fuzzy$tau, na.rm = TRUE))
+  expect_false(anyNA(bo$cb_upper))
+  expect_false(anyNA(bo$cb_lower))
+  expect_true(all(bo$cb_upper >= out_boot_fuzzy$tau))
+  expect_true(all(bo$cb_lower <= out_boot_fuzzy$tau))
 })
 
 test_that("r3d() with boot=TRUE and test='homogeneity' works properly", {
@@ -305,74 +306,79 @@ test_that("r3d_bootstrap() can be called directly with r3d object", {
 # 4) Scenario-based test with random distributions
 ################################################################################
 
-delta_mu <- 2
-delta_sigma <- 0.5
-base_mu_below <- 5
-slope_mu_below <- 0.5
-base_sigma_below <- 1
-slope_sigma_below <- 0.2
-c_cutoff <- 0
+local({
+  delta_mu <- 2
+  delta_sigma <- 0.5
+  base_mu_below <- 5
+  slope_mu_below <- 0.5
+  base_sigma_below <- 1
+  slope_sigma_below <- 0.2
+  c_cutoff <- 0
 
-simulate_data_scenario1 <- function(N, n_obs) {
-  x <- runif(N, -1, 1)
-  y <- vector("list", N)
-  mu_at_c <- base_mu_below + slope_mu_below * c_cutoff
-  sigma_at_c <- base_sigma_below + slope_sigma_below * c_cutoff
-  for (i in seq_len(N)) {
-    if (x[i] < c_cutoff) {
-      mu <- rnorm(1, mean = base_mu_below + slope_mu_below * x[i], sd = 1)
-      sigma <- abs(rnorm(1, mean = base_sigma_below + slope_sigma_below * x[i], sd = 0.5))
-    } else {
-      mu <- rnorm(1, mean = mu_at_c + delta_mu, sd = 1)
-      sigma <- abs(rnorm(1, mean = sigma_at_c + delta_sigma, sd = 0.5))
+  simulate_data_scenario1 <- function(N, n_obs) {
+    x <- runif(N, -1, 1)
+    y <- vector("list", N)
+    mu_at_c <- base_mu_below + slope_mu_below * c_cutoff
+    sigma_at_c <- base_sigma_below + slope_sigma_below * c_cutoff
+    for (i in seq_len(N)) {
+      if (x[i] < c_cutoff) {
+        mu <- rnorm(1, mean = base_mu_below + slope_mu_below * x[i], sd = 1)
+        sigma <- abs(rnorm(1, mean = base_sigma_below + slope_sigma_below * x[i], sd = 0.5))
+      } else {
+        mu <- rnorm(1, mean = mu_at_c + delta_mu, sd = 1)
+        sigma <- abs(rnorm(1, mean = sigma_at_c + delta_sigma, sd = 0.5))
+      }
+      y[[i]] <- rnorm(n_obs, mean = mu, sd = sigma)
     }
-    y[[i]] <- rnorm(n_obs, mean = mu, sd = sigma)
+    list(x = x, y = y)
   }
-  list(x = x, y = y)
-}
 
-true_treatment_effect_scenario1 <- function(q_levels) {
-  mu_at_c <- base_mu_below + slope_mu_below * c_cutoff
-  sigma_at_c <- base_sigma_below + slope_sigma_below * c_cutoff
-  mu_below <- mu_at_c
-  sigma_below <- sigma_at_c
-  mu_above <- mu_below + delta_mu
-  sigma_above <- sigma_below + delta_sigma
-  q_below <- qnorm(q_levels, mean = mu_below, sd = sigma_below)
-  q_above <- qnorm(q_levels, mean = mu_above, sd = sigma_above)
-  q_above - q_below
-}
-
-test_that("Scenario 1 distribution test => simple & frechet have finite bias", {
-  set.seed(108)
-  n_rep <- 5
-  N <- 80
-  n_obs <- 30
-  q_levels <- seq(0.01, 0.9, by = 0.1)
-  true_te <- true_treatment_effect_scenario1(q_levels)
-  
-  results_simp <- list()
-  results_frech <- list()
-  for (r in seq_len(n_rep)) {
-    dat <- simulate_data_scenario1(N, n_obs)
-    out_simp <- r3d(X = dat$x, Y_list = dat$y, cutoff = c_cutoff, 
-                    method = "simple", p = 1, q_grid = q_levels, boot = FALSE)
-    out_frech <- r3d(X = dat$x, Y_list = dat$y, cutoff = c_cutoff,
-                     method = "frechet", p = 1, q_grid = q_levels, boot = FALSE)
-    results_simp[[r]] <- out_simp$tau
-    results_frech[[r]] <- out_frech$tau
+  true_treatment_effect_scenario1 <- function(q_levels) {
+    mu_at_c <- base_mu_below + slope_mu_below * c_cutoff
+    sigma_at_c <- base_sigma_below + slope_sigma_below * c_cutoff
+    mu_below <- mu_at_c
+    sigma_below <- sigma_at_c
+    mu_above <- mu_below + delta_mu
+    sigma_above <- sigma_below + delta_sigma
+    q_below <- qnorm(q_levels, mean = mu_below, sd = sigma_below)
+    q_above <- qnorm(q_levels, mean = mu_above, sd = sigma_above)
+    q_above - q_below
   }
-  simp_mat <- do.call(rbind, results_simp)
-  frech_mat <- do.call(rbind, results_frech)
-  
-  avg_bias_simp <- mean(rowMeans(simp_mat - matrix(true_te, nrow = n_rep, ncol = length(q_levels), byrow = TRUE)), na.rm = TRUE)
-  avg_bias_frech <- mean(rowMeans(frech_mat - matrix(true_te, nrow = n_rep, ncol = length(q_levels), byrow = TRUE)), na.rm = TRUE)
-  
-  expect_lt(abs(avg_bias_simp), 2)
-  expect_lt(abs(avg_bias_frech), 2)
+
+  test_that("Scenario 1 distribution test => simple & frechet have finite bias", {
+    set.seed(108)
+    n_rep <- 5
+    N <- 80
+    n_obs <- 30
+    q_levels <- seq(0.01, 0.9, by = 0.1)
+    true_te <- true_treatment_effect_scenario1(q_levels)
+
+    results_simp <- list()
+    results_frech <- list()
+    for (r in seq_len(n_rep)) {
+      dat <- simulate_data_scenario1(N, n_obs)
+      out_simp <- r3d(X = dat$x, Y_list = dat$y, cutoff = c_cutoff,
+                      method = "simple", p = 1, q_grid = q_levels, boot = FALSE)
+      out_frech <- r3d(X = dat$x, Y_list = dat$y, cutoff = c_cutoff,
+                       method = "frechet", p = 1, q_grid = q_levels, boot = FALSE)
+      results_simp[[r]] <- out_simp$tau
+      results_frech[[r]] <- out_frech$tau
+    }
+    simp_mat <- do.call(rbind, results_simp)
+    frech_mat <- do.call(rbind, results_frech)
+
+    avg_bias_simp <- mean(rowMeans(simp_mat - matrix(true_te, nrow = n_rep, ncol = length(q_levels), byrow = TRUE)), na.rm = TRUE)
+    avg_bias_frech <- mean(rowMeans(frech_mat - matrix(true_te, nrow = n_rep, ncol = length(q_levels), byrow = TRUE)), na.rm = TRUE)
+
+    # Smoke test only: n_rep=5 is intentionally small and threshold intentionally loose (< 2).
+    # This catches only catastrophic failures, not subtle bias.
+    expect_lt(abs(avg_bias_simp), 2)
+    expect_lt(abs(avg_bias_frech), 2)
+  })
 })
 
 test_that("Known treatment effect is recovered by both methods (for large enough data)", {
+  skip_on_cran()
   set.seed(1088)
   test_data <- create_test_data(n = 1000, sample_size=1000, fuzzy = FALSE)
   q_grid <- seq(0.1, 0.9, by = 0.1)
@@ -438,6 +444,29 @@ test_that("summary.r3d() and plot.r3d() work properly", {
   
   pdf(NULL)
   expect_silent(plot(out, main = "Test Plot R3D"))
+  dev.off()
+})
+
+test_that("summary.r3d(), print.r3d(), and plot.r3d() work for frechet objects", {
+  skip_on_cran()
+  set.seed(112)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  out_frech <- r3d(X = test_data$x, Y_list = test_data$y_list, cutoff = 0,
+                   method = "frechet", p = 1,
+                   q_grid = seq(0.25, 0.75, by = 0.25),
+                   boot = FALSE)
+
+  expect_s3_class(out_frech, "r3d")
+  expect_equal(out_frech$method, "frechet")
+
+  expect_silent(print_out <- capture.output(print(out_frech)))
+  expect_match(print_out, "R3D: Regression Discontinuity with Distributional Outcomes", all = FALSE)
+
+  expect_silent(summ_out <- capture.output(summary(out_frech)))
+  expect_match(summ_out, "Method:", all = FALSE)
+
+  pdf(NULL)
+  expect_silent(plot(out_frech, main = "Frechet Test Plot"))
   dev.off()
 })
 
@@ -802,6 +831,29 @@ test_that("Bootstrap with seed produces identical results across two calls", {
                        B = 20, seed = 42, cores = 1)
   bo2 <- r3d_bootstrap(object = r3d_obj, X = test_data$x, Y_list = test_data$y_list,
                        B = 20, seed = 42, cores = 1)
+
+  expect_equal(bo1$boot_taus, bo2$boot_taus)
+  expect_equal(bo1$crit_val,  bo2$crit_val)
+})
+
+test_that("Bootstrap with seed produces identical results with cores=2 (parallel path)", {
+  # Known limitation: mclapply without L'Ecuyer-CMRG RNG kind does not guarantee
+  # reproducible per-worker streams even when set.seed() is called before the call.
+  # This test documents the requirement; remove skip() once r3d_bootstrap pre-generates
+  # xi_mat in the parent process (or switches to L'Ecuyer-CMRG) for parallel seeding.
+  skip("parallel mclapply seed reproducibility requires L'Ecuyer-CMRG RNG; see issue for fix")
+  if (.Platform$OS.type == "windows") {
+    skip("mclapply is single-core on Windows; parallel seed test skipped")
+  }
+  set.seed(4003)
+  test_data <- create_test_data(n = 40, sample_size = 20, fuzzy = FALSE)
+  r3d_obj <- r3d(X = test_data$x, Y_list = test_data$y_list,
+                 method = "simple", p = 1, boot = FALSE)
+
+  bo1 <- r3d_bootstrap(object = r3d_obj, X = test_data$x, Y_list = test_data$y_list,
+                       B = 20, seed = 42, cores = 2)
+  bo2 <- r3d_bootstrap(object = r3d_obj, X = test_data$x, Y_list = test_data$y_list,
+                       B = 20, seed = 42, cores = 2)
 
   expect_equal(bo1$boot_taus, bo2$boot_taus)
   expect_equal(bo1$crit_val,  bo2$crit_val)
