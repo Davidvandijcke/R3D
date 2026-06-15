@@ -43,8 +43,9 @@ program define r3d, eclass
     }
     
     // Normalize aliases to DiSCo-style option names before parsing
-    local cmdline = regexr(`"`0'"', "(?i)nquantiles\(", "nq(")
-    local cmdline = regexr(`"`cmdline'"', "(?i)denbandwidth\(", "denband(")
+    local 0 = strlower(`"`0'"')
+    local cmdline = regexr(`"`0'"', "nquantiles\(", "nq(")
+    local cmdline = regexr(`"`cmdline'"', "denbandwidth\(", "denband(")
     local 0 `"`cmdline'"'
 
     syntax varlist(min=2 numeric) [if] [in], ///
@@ -188,17 +189,12 @@ program define r3d, eclass
             `polynomial', `pilot', `kernel_type', "`method'", "`touse'", `is_fuzzy', `coverage_flag', "`weights'")
 
         matrix `HNUM' = r(h_num)
+        if `is_fuzzy' local h_den_scalar = r(h_den)
+        else local h_den_scalar = 0
         mata: st_numscalar("`HNUM_RC'", r3d_prepare_bandwidth_matrix("`HNUM'", `nq', "`method'"))
         if scalar(`HNUM_RC') != 0 {
             di as error "Bandwidth selection failed; inspect data or specify bandwidth() manually"
             exit 498
-        }
-
-        if `is_fuzzy' {
-            local h_den_scalar = r(h_den)
-        }
-        else {
-            local h_den_scalar = 0
         }
 
         // Report selection summary
@@ -211,6 +207,7 @@ program define r3d, eclass
     else {
         // User-supplied numerator bandwidths
         mata: st_matrix("`HNUM'", (strtoreal(tokens("`bandwidth'")))')
+        mata: if (min(st_matrix("`HNUM'")) <= 0) _error(198, "bandwidth() values must be strictly positive")
         mata: st_numscalar("`HNUM_RC'", r3d_prepare_bandwidth_matrix("`HNUM'", `nq', "`method'"))
         if scalar(`HNUM_RC') != 0 {
             di as error "bandwidth() must be a scalar or vector of length matching quantiles"
@@ -228,6 +225,10 @@ program define r3d, eclass
                 exit 198
             }
             local h_den_scalar : word 1 of `denbandwidth'
+            if `h_den_scalar' <= 0 {
+                di as error "denbandwidth() value must be strictly positive"
+                exit 198
+            }
         }
         else {
             local h_den_scalar = 0
@@ -291,10 +292,7 @@ program define r3d, eclass
         mata: st_matrix("`V'", diag((st_matrix("`se'"):^2)'))
     }
     else {
-        matrix `V' = J(`nq', `nq', 0)
-        forvalues i = 1/`nq' {
-            matrix `V'[`i',`i'] = `se'[1,`i']^2
-        }
+        mata: st_matrix("`V'", diag(st_matrix("`se'"):^2))
     }
     
     // Column names for matrices
@@ -418,30 +416,40 @@ program define r3d_plot
     syntax, quantiles(numlist) [level(cilevel)]
     
     preserve
-    
+
     tempvar quantile tau ci_lower ci_upper
-    
+
+    local has_boot_ci 0
+    capture confirm matrix e(cb_lower)
+    if _rc == 0 local has_boot_ci 1
+
     quietly {
         clear
         local nq : word count `quantiles'
         set obs `nq'
-        
+
         gen `quantile' = .
         gen `tau' = .
         gen `ci_lower' = .
         gen `ci_upper' = .
-        
+
         forvalues i = 1/`nq' {
             replace `quantile' = `: word `i' of `quantiles'' in `i'
             replace `tau' = _b[q`i'] in `i'
-            replace `ci_lower' = _b[q`i'] - invnormal(1-(1-`level'/100)/2)*_se[q`i'] in `i'
-            replace `ci_upper' = _b[q`i'] + invnormal(1-(1-`level'/100)/2)*_se[q`i'] in `i'
+            if `has_boot_ci' {
+                replace `ci_lower' = e(cb_lower)[1,`i'] in `i'
+                replace `ci_upper' = e(cb_upper)[1,`i'] in `i'
+            }
+            else {
+                replace `ci_lower' = _b[q`i'] - invnormal(1-(1-`level'/100)/2)*_se[q`i'] in `i'
+                replace `ci_upper' = _b[q`i'] + invnormal(1-(1-`level'/100)/2)*_se[q`i'] in `i'
+            }
         }
     }
     
     twoway (rarea `ci_lower' `ci_upper' `quantile', color(gs14) lwidth(none)) ///
-           (line `tau' `quantile', lcolor(navy) lwidth(medthick)) ///
-           (line `quantile' `quantile' if `tau'==0, lcolor(gs8) lpattern(dash)), ///
+           (line `tau' `quantile', lcolor(navy) lwidth(medthick)), ///
+           yline(0, lcolor(gs8) lpattern(dash)) ///
            ytitle("Treatment Effect") xtitle("Quantile") ///
            legend(order(2 "Point Estimate" 1 "`level'% CI") rows(1)) ///
            title("RD Treatment Effects by Quantile") ///
