@@ -52,7 +52,7 @@ summary.r3d <- function(object, samples = c(0.25, 0.5, 0.75), ...) {
         round(min(unlist(object$bandwidths), na.rm = TRUE), 4), "to", 
         round(max(unlist(object$bandwidths), na.rm = TRUE), 4), "\n")
   } else {
-    cat(" Single IMSE bandwidth:", round(object$results$h_used$h_use_num, 4), "\n")
+    cat(" Single IMSE bandwidth:", round(if (is.list(object$results$h_used)) object$results$h_used$h_use_num else object$results$h_used, 4), "\n")
   }
   
   # (Optional: printing all quantile treatment effects is commented out)
@@ -121,30 +121,36 @@ summary.r3d <- function(object, samples = c(0.25, 0.5, 0.75), ...) {
       }
     }
     
-    # Aggregated effect: partition q into intervals
-    s0 <- c(0, samples, 1)
-    cat("\nAggregated distributional effects:\n")
-    agg_mat <- NULL
-    for (i in seq_len(length(s0) - 1)) {
-      from <- s0[i]
-      to <- s0[i + 1]
-      sel <- which(object$q_grid >= from & object$q_grid <= to)
-      if (length(sel) > 0) {
-        mean_eff <- mean(object$tau[sel])
-        ci_l <- mean(object$boot_out$cb_lower[sel])
-        ci_u <- mean(object$boot_out$cb_upper[sel])
-        
-        agg_mat <- rbind(agg_mat, 
-                         data.frame(
-                           Quantile_Range = paste(from, "-", to),
-                           Average_Effect = round(mean_eff, 4),
-                           CI_Lower = round(ci_l, 4),
-                           CI_Upper = round(ci_u, 4),
-                           stringsAsFactors = FALSE
-                         ))
+    # Aggregated effect: partition q into intervals (only when cb_lower is available)
+    if (!is.null(object$boot_out$cb_lower)) {
+      s0 <- c(0, samples, 1)
+      cat("\nAggregated distributional effects:\n")
+      agg_mat <- NULL
+      for (i in seq_len(length(s0) - 1)) {
+        from <- s0[i]
+        to <- s0[i + 1]
+        sel <- if (i < length(s0) - 1) {
+          which(object$q_grid >= from & object$q_grid < to)
+        } else {
+          which(object$q_grid >= from & object$q_grid <= to)
+        }
+        if (length(sel) > 0) {
+          mean_eff <- mean(object$tau[sel])
+          ci_l <- mean(object$boot_out$cb_lower[sel])
+          ci_u <- mean(object$boot_out$cb_upper[sel])
+
+          agg_mat <- rbind(agg_mat,
+                           data.frame(
+                             Quantile_Range = paste(from, "-", to),
+                             Average_Effect = round(mean_eff, 4),
+                             CI_Lower = round(ci_l, 4),
+                             CI_Upper = round(ci_u, 4),
+                             stringsAsFactors = FALSE
+                           ))
+        }
       }
+      print(agg_mat, row.names = FALSE)
     }
-    print(agg_mat, row.names = FALSE)
   } else {
     cat("\nNo bootstrap results. Set boot=TRUE in r3d() to get inference.\n")
   }
@@ -152,9 +158,6 @@ summary.r3d <- function(object, samples = c(0.25, 0.5, 0.75), ...) {
 }
 
 
-
-# Helper for summary method
-`%||%` <- function(x, y) if(is.null(x)) y else x
 
 #' Plot an r3d Object
 #'
@@ -205,6 +208,8 @@ plot.r3d <- function(x, main=NULL, ylim=NULL, xlab="Quantile", ylab="Treatment E
                    ifelse(obj$fuzzy, "Fuzzy", "Sharp"), ", ", 
                    obj$method, ")")
   }
+  cb_l <- NULL
+  cb_u <- NULL
   if(!is.null(obj$boot_out)) {
     cb_l <- obj$boot_out$cb_lower
     cb_u <- obj$boot_out$cb_upper
@@ -234,7 +239,7 @@ plot.r3d <- function(x, main=NULL, ylim=NULL, xlab="Quantile", ylab="Treatment E
   }
   
   # Add confidence bands if available
-  if(!is.null(obj$boot_out)) {
+  if(!is.null(cb_l)) {
     graphics::lines(qq, cb_l, col=ci_col, lty=ci_lty)
     graphics::lines(qq, cb_u, col=ci_col, lty=ci_lty)
     graphics::legend("topleft",
@@ -283,7 +288,7 @@ print.r3d <- function(x, ...) {
   if(x$method == "simple") {
     cat("Bandwidths: MSE-optimal (varies by quantile)\n")
   } else {
-    cat("Bandwidth: IMSE-optimal =", format(x$results$h_used, digits=4), "\n")
+    cat("Bandwidth: IMSE-optimal =", round(if (is.list(x$results$h_used)) x$results$h_used$h_use_num else x$results$h_used, 4), "\n")
   }
   
   # Sample sizes
@@ -292,7 +297,7 @@ print.r3d <- function(x, ...) {
   
   # Bootstrap info
   if(!is.null(x$boot_out)) {
-    cat("Bootstrap: YES (", ncol(x$boot_out$boot_taus), "replications)\n", sep="")
+    cat("Bootstrap: YES (", NCOL(x$boot_out$boot_taus), "replications)\n", sep="")
   } else {
     cat("Bootstrap: NO\n")
   }
