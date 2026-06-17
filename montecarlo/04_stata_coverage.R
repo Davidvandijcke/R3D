@@ -10,17 +10,17 @@ cat("=== R3D Monte Carlo: Stata Uniform Coverage ===\n\n")
 outdir <- file.path(getwd(), "output")
 stata_dir <- file.path(outdir, "results_Stata")
 
-NQ <- 9
 Q_GRID <- (1:9) / 10
+NQ <- length(Q_GRID)  # F4: derived from Q_GRID, not hardcoded independently
 N_SIMS <- 100
 
 # Pre-compute DGP2 true tau
 true_tau_dgp2 <- list()
+set.seed(99999)  # F1: seed set once before the loop, not reset each iteration
+large_n <- 1e6
+y_below <- rnorm(large_n, mean = 0, sd = 1) + 2 * rexp(large_n, rate = 1)  # F1: cached outside loop
 for (delta in c(0, 1, 2)) {
-  set.seed(99999)
-  large_n <- 1e6
   y_above <- rnorm(large_n, mean = delta, sd = 1) + 2 * rexp(large_n, rate = 1)
-  y_below <- rnorm(large_n, mean = 0, sd = 1) + 2 * rexp(large_n, rate = 1)
   true_tau_dgp2[[as.character(delta)]] <-
     quantile(y_above, probs = Q_GRID, names = FALSE) -
     quantile(y_below, probs = Q_GRID, names = FALSE)
@@ -34,6 +34,9 @@ cells <- expand.grid(
   method = c("simple", "frechet"),
   stringsAsFactors = FALSE
 )
+
+# F6: check stata_dir exists before starting aggregation
+if (!dir.exists(stata_dir)) stop("Stata results directory not found: ", stata_dir)
 
 results <- list()
 
@@ -51,6 +54,7 @@ for (i in seq_len(nrow(cells))) {
   } else {
     true_tau <- true_tau_dgp2[[as.character(delta)]]
   }
+  stopifnot(length(true_tau) == NQ)  # F3: guard against silent recycling
 
   for (tag in c("sharedbw", "ownbw")) {
     # Collect results across sims
@@ -60,7 +64,7 @@ for (i in seq_len(nrow(cells))) {
     pval_null <- rep(NA, N_SIMS)
     pval_homo <- rep(NA, N_SIMS)
 
-    for (s in 1:N_SIMS) {
+    for (s in seq_len(N_SIMS)) {  # F5: seq_len avoids 1:0 pitfall
       f <- file.path(stata_dir, sprintf("mc_res_%s_%s_%d.csv", cell, tag, s))
       if (!file.exists(f)) next
       d <- read.csv(f)
@@ -77,10 +81,17 @@ for (i in seq_len(nrow(cells))) {
       }
     }
 
-    valid <- !is.na(tau_mat[, 1])
+    # F2: full-row validity across all three matrices
+    valid <- rowSums(is.na(tau_mat)) == 0 &
+             rowSums(is.na(cb_lo_mat)) == 0 &
+             rowSums(is.na(cb_hi_mat)) == 0
     n_valid <- sum(valid)
 
     if (n_valid == 0) next
+
+    # F7: separate validity mask for p-value-based rejection rates
+    pval_valid <- valid & !is.na(pval_null) & !is.na(pval_homo)
+    n_pval_valid <- sum(pval_valid)
 
     # Uniform coverage: true tau within [cb_lo, cb_hi] at ALL quantiles simultaneously
     covered_mat <- cb_lo_mat[valid, , drop = FALSE] <=
@@ -102,13 +113,13 @@ for (i in seq_len(nrow(cells))) {
                              matrix(true_tau, nrow = n_valid, ncol = NQ, byrow = TRUE))^2))
     mean_rmse <- mean(rmse)
 
-    # Rejection rates
-    rej_null <- mean(pval_null[valid] < 0.05, na.rm = TRUE)
-    rej_homo <- mean(pval_homo[valid] < 0.05, na.rm = TRUE)
+    # F7: Rejection rates use pval_valid mask (correct denominator)
+    rej_null <- mean(pval_null[pval_valid] < 0.05, na.rm = TRUE)
+    rej_homo <- mean(pval_homo[pval_valid] < 0.05, na.rm = TRUE)
 
     results[[length(results) + 1]] <- data.frame(
       cell = cell, dgp = dgp, method = method, n = n_obs, delta = delta,
-      bw_type = tag, n_valid = n_valid,
+      bw_type = tag, n_valid = n_valid, n_pval_valid = n_pval_valid,  # F7: report n_pval_valid
       uniform_coverage = uniform_coverage,
       min_pointwise_cov = min(pointwise_coverage),
       mean_pointwise_cov = mean(pointwise_coverage),
@@ -122,6 +133,9 @@ for (i in seq_len(nrow(cells))) {
 }
 
 df <- do.call(rbind, results)
+
+# F6: fail fast with clear diagnostic if no results were collected
+if (is.null(df) || nrow(df) == 0) stop("No valid Stata results found in: ", stata_dir)
 
 # Print summary table
 cat(sprintf("%-45s  %4s  %6s  %6s  %6s  %6s  %6s\n",
