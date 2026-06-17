@@ -44,7 +44,7 @@ summary.r3d <- function(object, samples = c(0.25, 0.5, 0.75), ...) {
   cat("\nMethod:", object$method, "\n")
   cat("Polynomial order p:", object$p, "\n")
   cat("Fuzzy:", object$fuzzy, "\n")
-  cat("Sample size:", length(object$X), "\n")
+  cat("Sample size:", length(object$inputs$X), "\n")
   
   cat("Bandwidth(s):\n")
   if (object$method == "simple") {
@@ -287,7 +287,7 @@ print.r3d <- function(x, ...) {
   }
   
   # Sample sizes
-  cat("Sample size:", length(x$X), "\n")
+  cat("Sample size:", length(x$inputs$X), "\n")
   cat("Quantiles evaluated:", length(x$q_grid), "\n")
   
   # Bootstrap info

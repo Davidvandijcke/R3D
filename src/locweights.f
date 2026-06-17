@@ -147,7 +147,8 @@ C        3. Solve the system for this quantile
          endif
          
          call DGETRS(TRANS, dim, 1, MAT, MAXDIM, IPIV, RHS, dim, INFO)
-         
+         IF (INFO .NE. 0) RETURN
+
 C        4. Store the coefficients
          do j = 1, dim
             jdx = (q-1)*dim + j
@@ -161,7 +162,8 @@ C        5. Compute intercept weights using inverse row
          RHS(1) = ONE
          
          call DGETRS(TRANS, dim, 1, MAT, MAXDIM, IPIV, RHS, dim, INFO)
-         
+         IF (INFO .NE. 0) RETURN
+
 C           Compute intercept weights for each observation
          do i = 1, N
 C           Recompute kernel weight (same as above)
