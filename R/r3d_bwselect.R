@@ -612,11 +612,51 @@ r3d_bwselect <- function(X, Y_list, T = NULL,
   if (coverage) {
     ## ROT for coverage error (Calonico et al 2020/2018)
     h_star_num <- h_star_num * n^{-s/((2*s+3)*(s+3))}
-  
+
     if (fuzzy) {
       h_star_den <- h_star_den * n^{-s/((2*s+3)*(s+3))}
     }
   }
+
+  # ------------------------------------------------
+  # Robustness guard: detect degenerate (I)MSE bandwidth and fall back
+  # ------------------------------------------------
+  # When the running variable has wide support and is dense at the cutoff, the
+  # pilot curvature in Steps 1-2 is effectively estimated over a near-global
+  # window (the pilot bandwidth h^0 spans most of the support). This over-states
+  # the *local* bias, collapsing the (I)MSE bandwidth toward zero and leaving too
+  # few observations for valid (especially distributional) inference. We detect
+  # this -- a bandwidth far below the rule-of-thumb scale, or one retaining too
+  # few observations -- and fall back to a rule-of-thumb bandwidth that keeps a
+  # workable sample. (The first-stage variance is *not* the culprit here: h_star
+  # scales like (variance)^{1/(2s+3)}, so replacing it has negligible effect; the
+  # degeneracy is driven by the over-stated curvature term.)
+  # Signal: the *fraction* of the sample the bandwidth retains. A genuine
+  # degeneracy keeps a tiny fraction even when abundant data is available; a
+  # legitimately small bandwidth on a small/low-curvature sample still keeps a
+  # healthy fraction. We use a relative (fraction) trigger so the guard does not
+  # fire on small-n or low-curvature cases that the (I)MSE formula handles
+  # correctly. (The first-stage *variance* is not the culprit: h_star scales like
+  # variance^{1/(2s+3)}, so replacing it is negligible; the collapse is driven by
+  # the over-stated curvature term.)
+  rot_bw    <- 1.06 * sigma_X * n^(-1 / 5)
+  min_frac  <- 0.05  # bandwidth must retain at least 5% of the sample
+  fb_bw     <- max(rot_bw, as.numeric(stats::quantile(abs(Xc), 0.10)))
+  is_degenerate <- function(h) vapply(h, function(hh) mean(abs(Xc) <= hh) < min_frac, logical(1))
+  if (any(is_degenerate(h_star_num))) {
+    warning("r3d_bwselect: (I)MSE-optimal bandwidth appears degenerate -- it retains ",
+            "< ", round(100 * min_frac), "% of observations, leaving too little data ",
+            "for reliable inference. This can occur when the running variable has wide ",
+            "support and is dense at the cutoff, which over-states local curvature in ",
+            "the pilot step. Falling back to a rule-of-thumb bandwidth (h = ",
+            signif(fb_bw, 4), "). Consider supplying `bandwidths` manually if a ",
+            "different scale is desired.")
+    h_star_num[is_degenerate(h_star_num)] <- fb_bw
+  }
+  if (fuzzy && !is.null(h_star_den) && any(is_degenerate(h_star_den))) {
+    h_star_den[is_degenerate(h_star_den)] <- fb_bw
+  }
+
   # Return results
   list(
     method = method,

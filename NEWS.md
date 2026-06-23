@@ -16,6 +16,7 @@
 * Fixed DLL registration: renamed `R_init_YourPackageName` to `R_init_R3D` so `R_registerRoutines` and `R_useDynamicSymbols` are called on load
 * Fixed C/Fortran type mismatch: argument 7 of `locweights` changed from `double *KERNELW` to `int *KERNEL_TYPE` to match Fortran `INTEGER` declaration
 * Fixed compound quoting bug in `r3d.ado` (lines 39-41) that caused option parsing failures when paths contained spaces
+* Added a degeneracy guard to `r3d_bwselect()`: when the (I)MSE-optimal bandwidth retains less than 5% of observations -- which can happen when the running variable has wide support and is dense at the cutoff, causing the pilot step to over-state local curvature and collapse the bandwidth toward zero -- it now falls back to a rule-of-thumb bandwidth and issues a warning, instead of silently returning a degenerate bandwidth
 
 ### Monte Carlo
 
